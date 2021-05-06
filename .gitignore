@@ -6,7 +6,7 @@
 /libraries/creislePQ/
 /libraries/gregablePQ/
 /libraries/graphSetPQ/
-/libraries/zanettiPQR/
+/libraries/zanettiPQR/*
 /evaluation/javaEvaluation/src/main/java/java_evaluation/jppzanetti/
 /evaluation/javaEvaluation/src/main/java/java_evaluation/jgraphed/
 /evaluation/javaEvaluation/src/main/java/java_evaluation/graphtea/
