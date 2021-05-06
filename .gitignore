@@ -1,6 +1,21 @@
 /cmake-build-*/
 /build-*/
 
+/evaluation/sagemath/pq_trees.py
+/libraries/bivocPQ/
+/libraries/creislePQ/
+/libraries/gregablePQ/
+/libraries/graphSetPQ/
+/libraries/zanettiPQR/
+/evaluation/javaEvaluation/src/main/java/java_evaluation/jppzanetti/
+/evaluation/javaEvaluation/src/main/java/java_evaluation/jgraphed/
+/evaluation/javaEvaluation/src/main/java/java_evaluation/graphtea/
+/libraries/bigInt/
+/libraries/json.hpp
+
+!/libraries/zanettiPQR/NodeRef.hpp
+!/libraries/zanettiPQR/PQRTree.cpp
+
 
 # Created by https://www.toptal.com/developers/gitignore/api/c++,java,python,intellij+all,jupyternotebooks,gradle
 # Edit at https://www.toptal.com/developers/gitignore?templates=c++,java,python,intellij+all,jupyternotebooks,gradle
