@@ -618,24 +618,24 @@ PCNode *PCTree::createCentralNode() {
         // assembly done, verify
 #ifdef OGDF_DEBUG
         log << "Central " << central << " and neighbors [";
-        for (PCNode *neigh : neighbors)
+        for (PCNode *neigh : c_neighbors)
             log << neigh->index() << ", ";
         log << "]" << std::endl;
-        OGDF_ASSERT(central->getDegree() == neighbors.size());
+        OGDF_ASSERT(central->getDegree() == c_neighbors.size());
         OGDF_ASSERT(central->getDegree() == partialNeighbors + (fullNeighbors > 0 ? 1 : 0) + (emptyNeighbors > 0 ? 1 : 0));
         OGDF_ASSERT(central->getDegree() >= 3);
         std::list<PCNode *> actual_neighbors{central->neighbors().begin(), central->neighbors().end()};
-        OGDF_ASSERT(actual_neighbors.size() == neighbors.size());
-        for (int i = 0; actual_neighbors.front() != neighbors.front(); i++) {
+        OGDF_ASSERT(actual_neighbors.size() == c_neighbors.size());
+        for (int i = 0; actual_neighbors.front() != c_neighbors.front(); i++) {
             actual_neighbors.push_back(actual_neighbors.front());
             actual_neighbors.pop_front();
-            OGDF_ASSERT(i < neighbors.size());
+            OGDF_ASSERT(i < c_neighbors.size());
         }
-        OGDF_ASSERT(actual_neighbors.size() == neighbors.size());
-        if (!std::equal(actual_neighbors.begin(), actual_neighbors.end(), neighbors.begin(), neighbors.end())) {
+        OGDF_ASSERT(actual_neighbors.size() == c_neighbors.size());
+        if (!std::equal(actual_neighbors.begin(), actual_neighbors.end(), c_neighbors.begin(), c_neighbors.end())) {
             actual_neighbors.push_back(actual_neighbors.front());
             actual_neighbors.pop_front();
-            OGDF_ASSERT(std::equal(actual_neighbors.rbegin(), actual_neighbors.rend(), neighbors.begin(), neighbors.end()));
+            OGDF_ASSERT(std::equal(actual_neighbors.rbegin(), actual_neighbors.rend(), c_neighbors.begin(), c_neighbors.end()));
         }
 #endif
 

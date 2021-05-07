@@ -5,7 +5,9 @@
 #include "hsuPC/include/PCTree.h"
 #include "hsuPC/include/PCNode.h"
 
+#ifdef OTHER_LIBS
 #include "zanettiPQR/PQRTree.h"
+#endif
 
 #include <ogdf/basic/STNumbering.h>
 #include <ogdf/basic/graph_generators.h>
@@ -117,10 +119,10 @@ bool isPlanarPC(const Graph &G, const NodeArray<int> &numbering) {
         if (n == order[0]) {
             mergedLeaf = T.newNode(PCNT::PNode);
         } else {
-            mergedLeaf = T.mergeLeaves(consecutiveLeaves);
-            if (mergedLeaf == nullptr) {
+            if (!T.makeConsecutive(consecutiveLeaves)){
                 return false;
             }
+            mergedLeaf = T.mergeLeaves(consecutiveLeaves, true);
         }
 
         OGDF_ASSERT(!outEdges.empty());
@@ -145,6 +147,7 @@ bool isPlanarPC(const Graph &G, const NodeArray<int> &numbering) {
     return true;
 }
 
+#ifdef OTHER_LIBS
 bool isPlanarPQR(const Graph &G, const NodeArray<int> &numbering) {
     std::unique_ptr<cpp_zanetti::PQRTree> T;
 
@@ -199,6 +202,7 @@ bool isPlanarPQR(const Graph &G, const NodeArray<int> &numbering) {
 
     return true;
 }
+#endif
 
 
 template<typename Ret=bool, typename Func>
@@ -289,7 +293,9 @@ int main(int argc, char **argv) {
 
         test(results, "HsuPC::isPlanar", [&] { return isPlanarPC<pc_tree::hsu::PCTree, pc_tree::hsu::PCNode, pc_tree::hsu::PCTree::PCNodeType>(G, numbering); });
         test(results, "BoothLueker::doTest", [&] { return isPlanarPQ(G, numbering); });
+#ifdef OTHER_LIBS
         test(results, "CppZanetti::isPlanar", [&] { return isPlanarPQR(G, numbering); });
+#endif
         Graph G1(G);
         test(results, "BoothLueker::isPlanarDestructive", [&] { return BoothLueker().isPlanarDestructive(G1); });
         Graph G2(G);

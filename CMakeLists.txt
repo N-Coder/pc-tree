@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 project(PCTree)
 set(CMAKE_CXX_STANDARD 17) # only needed for evaluation, remaining code is C++11
 set(PROJECT_VERSION 0.0.1)
-set(CMAKE_CXX_FLAGS_DEBUG "-Og -g -Werror=uninitialized -Wall")
+set(CMAKE_CXX_FLAGS_DEBUG "-Og -g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -g -DNDEBUG -march=native -mtune=native")
 include(GNUInstallDirs)
 
@@ -25,6 +25,7 @@ message("OGDF_IMPORTED_CONFIGURATIONS is ${OGDF_IMPORTED_CONFIGURATIONS}")
 add_library(bigInt libraries/bigInt/bigint.cpp)
 
 if (LIKWID_PERFMON)
+    message("Including LIKWID")
     #set(LIKWID_DIR /home/user/likwid/install/share/likwid)
     find_package(likwid REQUIRED)
 endif ()
@@ -37,6 +38,9 @@ target_link_libraries(hsuPC OGDF bigInt)
 target_include_directories(hsuPC PRIVATE "libraries" "${HSU_PC_DIR}/include")
 
 if (OTHER_LIBS)
+    message("Including other libraries")
+    add_compile_definitions(OTHER_LIBS)
+
     set(GREG_PQ_DIR libraries/gregablePQ)
     add_library(gregPQ ${GREG_PQ_DIR}/pqnode.cc ${GREG_PQ_DIR}/pqtree.cc)
     target_include_directories(gregPQ PRIVATE "libraries")
@@ -78,42 +82,45 @@ set(SOURCE_FILES
         #src/PCTree_restriction.cpp
         )
 
+function(make_pc_target TARGET)
+    target_include_directories(${TARGET} PUBLIC "include")
+    target_include_directories(${TARGET} PRIVATE "libraries" "libraries/bandit")
+    target_link_libraries(${TARGET} OGDF bigInt)
+    target_compile_options(${TARGET} PRIVATE "-Werror=uninitialized" "-Wall")
+endfunction()
+
+
 add_executable(construction ${SOURCE_FILES} src/test/construction.cpp)
+make_pc_target(construction)
 #target_include_directories(construction PRIVATE ${OGDF_INCLUDE_DIRS})
 #target_include_directories(construction PRIVATE ${OGDF_DIR}/../)
-target_include_directories(construction PUBLIC "include")
-target_include_directories(construction PRIVATE "libraries" "libraries/bandit")
-target_link_libraries(construction OGDF bigInt)
 
 add_executable(restriction ${SOURCE_FILES} src/test/restriction.cpp)
-target_include_directories(restriction PUBLIC "include")
-target_include_directories(restriction PRIVATE "libraries" "libraries/bandit")
-target_link_libraries(restriction OGDF bigInt hsuPC)
+make_pc_target(restriction)
 
 add_executable(make_restrictions_planarity ${SOURCE_FILES} src/exec/make_restrictions_planarity.cpp)
-target_include_directories(make_restrictions_planarity PUBLIC "include")
-target_include_directories(make_restrictions_planarity PRIVATE "libraries")
-target_link_libraries(make_restrictions_planarity OGDF bigInt ${COMPARE_LIBRARIES} stdc++fs)
+make_pc_target(make_restrictions_planarity)
+target_link_libraries(make_restrictions_planarity ${COMPARE_LIBRARIES} stdc++fs)
 
 add_executable(make_restrictions_tree ${SOURCE_FILES} src/exec/make_restrictions_tree.cpp)
-target_include_directories(make_restrictions_tree PUBLIC "include")
-target_include_directories(make_restrictions_tree PRIVATE "libraries")
-target_link_libraries(make_restrictions_tree OGDF bigInt)
+make_pc_target(make_restrictions_tree)
 
 add_executable(test_planarity ${SOURCE_FILES} src/exec/test_planarity.cpp)
-target_include_directories(test_planarity PUBLIC "include")
-target_include_directories(test_planarity PRIVATE "libraries")
-target_link_libraries(test_planarity OGDF bigInt hsuPC cppZanetti)
+make_pc_target(test_planarity)
+target_link_libraries(test_planarity hsuPC)
 
 add_executable(test_planarity_performance ${SOURCE_FILES} src/exec/test_planarity_performance.cpp)
-target_include_directories(test_planarity_performance PUBLIC "include")
-target_include_directories(test_planarity_performance PRIVATE "libraries")
-target_link_libraries(test_planarity_performance OGDF bigInt hsuPC cppZanetti)
+make_pc_target(test_planarity_performance)
+target_link_libraries(test_planarity_performance hsuPC)
+
+if (OTHER_LIBS)
+    target_link_libraries(test_planarity cppZanetti)
+    target_link_libraries(test_planarity_performance cppZanetti)
+endif()
 
 add_executable(test_restrictions ${SOURCE_FILES} src/exec/test_restrictions.cpp)
-target_include_directories(test_restrictions PUBLIC "include")
-target_include_directories(test_restrictions PRIVATE "libraries")
-target_link_libraries(test_restrictions OGDF bigInt ${COMPARE_LIBRARIES})
+make_pc_target(test_restrictions)
+target_link_libraries(test_restrictions ${COMPARE_LIBRARIES})
 
 if (LIKWID_PERFMON)
     target_include_directories(test_planarity PRIVATE ${LIKWID_INCLUDE_DIR})

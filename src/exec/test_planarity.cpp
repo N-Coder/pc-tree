@@ -8,7 +8,9 @@
 #include <hsuPC/include/PCTree.h>
 #include <hsuPC/include/PCNode.h>
 
+#ifdef OTHER_LIBS
 #include "zanettiPQR/PQRTree.h"
+#endif
 
 #include <ogdf/basic/STNumbering.h>
 #include <ogdf/fileformats/GraphIO.h>
@@ -234,11 +236,11 @@ long isPlanarPC(Graph &G, NodeArray<int> &numbering) {
                 likwid_after_it(restrictionResults);
             }
 
-            mergedLeaf = T.mergeLeaves(consecutiveLeaves, true);
-        }
+            if (!possible) {
+                return -accumTime;
+            }
 
-        if (mergedLeaf == nullptr) {
-            return -accumTime;
+            mergedLeaf = T.mergeLeaves(consecutiveLeaves, true);
         }
 
         OGDF_ASSERT(!outEdges.empty());
@@ -263,6 +265,7 @@ long isPlanarPC(Graph &G, NodeArray<int> &numbering) {
     return accumTime;
 }
 
+#ifdef OTHER_LIBS
 long isPlanarPQR(const Graph &G, NodeArray<int> &numbering) {
     std::unique_ptr<cpp_zanetti::PQRTree> T;
     long accumTime = 0;
@@ -350,6 +353,7 @@ long isPlanarPQR(const Graph &G, NodeArray<int> &numbering) {
 
     return accumTime;
 }
+#endif
 
 int main(int argc, char **argv) {
     std::string type = "UFPC";
@@ -417,8 +421,10 @@ int main(int argc, char **argv) {
             isPlanarPC<pc_tree::hsu::PCTree, pc_tree::hsu::PCNode, pc_tree::hsu::PCTree::PCNodeType, pc_tree::hsu::PCTreeNodeArray>(G, numbering);
         } else if (type == "OGDF") {
             isPlanarPQ(G, numbering);
+#ifdef OTHER_LIBS
         } else if (type == "CppZanetti") {
             isPlanarPQR(G, numbering);
+#endif
         } else {
             cerr << "Invalid type argument " << type << "!" << std::endl;
             return 1;
