@@ -15,15 +15,19 @@ needs `clang` and `clang-format`, preferably version 11.
 
 Running the evaluation automatically needs a SLURM cluster, esp. the `sbatch` command, to run all jobs in parallel.
 Furthermore, credentials for a MongoDB database and collection for the evaluation results need to be entered in `evaluation.py` and `plots/common.py`.
+We provide a preconfigured Docker container that provides this environment on a single machine without a runtime overhead.
 
 ## Installation
 
+First, you need to check out the project and its submodules.
 ```shell
-# Check out project and submodules
-git clone https://github.com/N-Coder/pc-tree.git pc-tree-public
-cd pc-tree-public/
+git clone https://github.com/N-Coder/pc-tree.git pc-tree
+cd pc-tree/
 git submodule update --init --recursive
+```
 
+Now you can directly build the project:
+```shell
 # Optionally download libraries for comparison (needs clang and clang-format 11)
 cd download/
 ./download.sh
@@ -38,9 +42,50 @@ cmake .. -DCMAKE_BUILD_TYPE=RELEASE -DOGDF_DIR=/scratch/finksim/ogdf/build-relea
 make -j 8
 ```
 
-Now you can generate some restrictions and test an implemenation on them:
+Alternatively, you can use our Docker container with an environment that is prepared for reproducing our experiments:
 ```shell
-$ mkdir out && ./make_restrictions_planarity out -n 1000 -m 3000 -p -s 0
+# Check out project and submodules
+git clone https://github.com/N-Coder/pc-tree.git pc-tree
+cd pc-tree/
+git submodule update --init --recursive
+
+# Create a virtual network and start a MongoDB instance 
+docker network create pc-tree-net
+docker run --name pc-tree-mongo --network pc-tree-net --publish 27017:27017 --detach mongo
+
+# Build the image and start the container
+docker build --tag pc-tree-image .
+docker run --name pc-tree-slurm --network pc-tree-net --publish 8888:8888 --volume .:/root/pc-tree:z --tty --interactive pc-tree-image /bin/bash
+
+# now, within the container (e.g. root@9b8368ef788c:~# )
+cd /root/pc-tree
+# build the binaries (including other libraries for comparison) optimized for your machine
+./docker-install.sh
+# start the slurm daemon (this needs to be done everytime you re-enter the container)
+./docker-start.sh
+```
+
+To start a jupyter notebook within the container, run the following command and open the printed link to `localhost` in your browser.
+```
+# jupyter notebook --allow-root --ip=0.0.0.0 --port=8888
+```
+To see the contents of the MongoDB, point a mongo client (e.g. [MongoDB Compass](https://www.mongodb.com/products/compass)) to `localhost:27017`.
+Alternatively, you can also request a `mongo` shell from the host machine:
+```
+$ docker exec -ti pc-tree-mongo mongosh
+```
+If you accidentally exited the `pc-tree-slurm` bash shell, you can re-enter the container with any previous changes retained by running:
+```
+$ docker start -ai pc-tree-slurm
+# ./docker-start.sh # restart slurmd
+```
+
+## Running the Evaluation Code
+
+Once your environment is set up, you can generate some restrictions and test an implemenation on them:
+```shell
+$ cd /root/pc-tree/build-release && mkdir out
+$ ./make_restrictions_planarity out -n 1000 -m 3000 -p -s 0
 GRAPH:{"edges":3000,"id":"G-n1000-m3000-s0-p1","matrices":["out/G-n1000-m3000-s0-p1_0",...],
   "matrices_count":573,"nodes":1000,"planar":true,"planarity_success":true,"seed":0}
 $ ./test_restrictions -t UFPC out/G-n1000-m3000-s0-p1_0
@@ -84,16 +129,16 @@ $ ./test_restrictions -t UFPC out/G-n1000-m3000-s0-p1_0
 
 Or test planarity on a whole graph:
 ```shell
-$ ./test_planarity -t UFPC ../evaluation/graphs/graphs2n/graphn100000e200000s2i8planar.gml
-{"c_nodes":52,"file":"graphn100000e200000s2i8planar.gml","fingerprint":"27393384","index":1000,"leaves":491,
+$ ./test_planarity -t UFPC ../evaluation/demo-graph.gml
+{"c_nodes":52,"file":"demo-graph.gml","fingerprint":"27393384","index":1000,"leaves":491,
  "name":"UFPC","p_nodes":105,"result":true,"size":5,"time":246484,"tp_length":5,"type":"UFPC","uid":"..."}
 ...
-{"c_nodes":5,"file":"graphn100000e200000s2i8planar.gml","index":99810,"leaves":70,
+{"c_nodes":5,"file":"demo-graph.gml","index":99810,"leaves":70,
  "name":"UFPC","p_nodes":12,"result":true,"size":30,"time":525288,"tp_length":2,"type":"UFPC"}
-$ ./test_planarity_performance -i ../evaluation/graphs/graphs2n/graphn100000e200000s2i8planar.gml
+$ ./test_planarity_performance -i ../evaluation/demo-graph.gml
 {
     "edges": 200000,
-    "id": "graphn100000e200000s2i8planar.gml",
+    "id": "demo-graph.gml",
     "nodes": 100000,
     "repetition": 0,
     "results": {
@@ -115,29 +160,36 @@ $ ./test_planarity_performance -i ../evaluation/graphs/graphs2n/graphn100000e200
 }
 ```
 
-If you have a SLURM cluster and a MongoDB, you can also run our complete evaluation suite:
-
+To generate a small test data set that can be used to roughly reproduce our results within a few hours:
 ```shell
-# Set up evaluation (needs slurm to run jobs and a mongoDB, see evaluation.py) 
-cd ../evaluation/
-python3 -m venv .venv
-source .venv/bin/activate
-pip3 install click pymongo sh matplotlib numpy pandas seaborn tabulate tqdm
-python3 evaluation.py compile # --local --clean
+# in /root/pc-tree/build-release
+mkdir out/graphs2n
+mkdir out/graphs3n
+for i in {100000..1000000..200000}; do ./make_graphs $i $((2*i)) 1 1 1 out/graphs2n; done
+for i in {100000..1000000..200000}; do ./make_graphs $i $((3*i)) 1 1 1 out/graphs3n; done
+python3 evaluation.py batch-make-restrictions --nodes-to=15000 --nodes-step=2000 --planar
+python3 evaluation.py batch-make-restrictions --nodes-to=15000 --nodes-step=2000
+python3 evaluation.py batch-make-restrictions-matrix --min-size=10 --max-size=500 --start-seed=1 --count=100
+```
 
-# Run all the evaluations on the slurm cluster
-# pass --help for more information
-python3 evaluation.py --help
-python3 evaluation.py test-planarity --help
-python3 evaluation.py batch-test-planarity --checkpoint=50000 -t types graphs/graphs2n/*.gml
-python3 evaluation.py batch-test-planarity --checkpoint=50000 -t types graphs/graphs3n/*.gml
-python3 evaluation.py batch-make-restrictions --planar
-python3 evaluation.py batch-test-restrictions -q "{\"planar\": true}" -t types
+The full data set used the paper can be obtained with the following configuration, but be aware that the evaluation will take quite some time:
+```shell
+for i in {100000..1000000..100000}; do ./make_graphs $i $((2*i)) 1 1 1 out/graphs2n; done
+for i in {100000..1000000..100000}; do ./make_graphs $i $((3*i)) 1 1 1 out/graphs3n; done
+for i in {100000..1000000..100000}; do ./make_graphs $i $((2*i)) 9 2 1 out/graphs2n; done
+for i in {100000..1000000..100000}; do ./make_graphs $i $((3*i)) 9 2 1 out/graphs3n; done
+python3 evaluation.py batch-make-restrictions --planar # uses default args from evaluation.py
 python3 evaluation.py batch-make-restrictions --nodes-to=20000 --nodes-step=10
-python3 evaluation.py batch-test-restrictions -q "{\"planar\": false}" -t types
+python3 evaluation.py batch-make-restrictions-matrix --min-size=10 --max-size=500 --start-seed=1 --count=1000
+```
 
-# Generate the plots (update credentials in plots/common.py)
+To run the evaluation and generate the plots from the paper:
+```shell
+python3 evaluation.py batch-test-planarity --checkpoint=50000 out/graphs2n/*.gml
+python3 evaluation.py batch-test-planarity --checkpoint=50000 out/graphs3n/*.gml
+python3 evaluation.py batch-test-restrictions
+python3 evaluation.py batch-test-matrices
+
 python3 plots/restrictions.py
 python3 plots/planarity.py
-python3 plots/performance.py
 ```
