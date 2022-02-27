@@ -187,52 +187,13 @@ show_fig(fig)
 # df["tree_type"] = pd.Categorical(df["tree_type"], categories=IMPLS_DESC, ordered=True)
 # df.sort_values("tree_type", inplace=True)
 
-COLORS["UFPC/OGDF"] = COLORS["UFPC"]
-COLORS["HsuPC/OGDF"] = COLORS["HsuPC"]
-COLORS["Zanetti/OGDF"] = COLORS["Zanetti"]
-COLORS["CppZanetti/OGDF"] = COLORS["CppZanetti"]
 MARKERS["UFPC/OGDF"] = MARKERS["UFPC"]
 MARKERS["HsuPC/OGDF"] = MARKERS["HsuPC"]
 MARKERS["Zanetti/OGDF"] = MARKERS["Zanetti"]
 MARKERS["CppZanetti/OGDF"] = MARKERS["CppZanetti"]
 
-IMPLS_COMPARE = ["UFPC/OGDF", "HsuPC/OGDF", "Zanetti/OGDF", "CppZanetti/OGDF"]
-
 
 # %%
-
-
-def make_speedupplot(data, x, ylim, range, filename, loc="upper right"):
-    fig, ax = plt.subplots()
-
-    ys = ["speedup.%s" % impl for impl in IMPLS_COMPARE]
-    data = data.dropna(subset=[x, *ys])
-    x_buckets = pd.cut(data[x], range)
-    groups = data.groupby(x_buckets)
-
-    # for impl in IMPLS_COMPARE:
-    #     sns.scatterplot(x=x, y="speedup.%s" % impl, label=impl, data=data, ax=ax, s=25, alpha=0.2,
-    #                     color=COLORS[impl], marker=MARKERS[impl])
-
-    for impl in IMPLS_COMPARE:
-        y = "speedup.%s" % impl
-        lower = groups[y].quantile(0.25).reset_index()
-        upper = groups[y].quantile(0.75).reset_index()
-        ax.fill_between(lower[x].apply(lambda x: x.mid), lower[y], upper[y], color=COLORS[impl], alpha=0.3)
-
-    for impl in IMPLS_COMPARE:
-        y = "speedup.%s" % impl
-        line = groups[y].median().reset_index()
-        ax.plot(line[x].apply(lambda x: x.mid), line[y], color="white", linewidth=2)
-        ax.plot(line[x].apply(lambda x: x.mid), line[y], color=COLORS[impl], linewidth=1, label=impl)
-
-    ax.set_ylabel("Time [ns]")
-    ax.set_xlabel(NAMES[x])
-    ax.set_ylim(*ylim)
-    ax.legend(loc=loc)
-    fig.savefig(filename)
-    return fig
-
 
 fig = make_speedupplot(
     df,

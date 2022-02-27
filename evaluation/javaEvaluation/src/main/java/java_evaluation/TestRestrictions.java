@@ -4,7 +4,11 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -36,11 +40,17 @@ public class TestRestrictions {
 		name.setRequired(true);
 		options.addOption(name);
 
+		Option allRestrictionsOption = new Option("A", "all-restrictions", false,
+				"collect data for all restrictions of the matrix");
+		allRestrictionsOption.setRequired(false);
+		options.addOption(allRestrictionsOption);
+
 		CommandLineParser parser = new DefaultParser();
 		CommandLine cmd = parser.parse(options, args);
 
 		TreeType treeType = TreeType.valueOf(cmd.getOptionValue("t"));
 		String tname = cmd.getOptionValue("n");
+		boolean allRestrictions = cmd.hasOption("A");
 		String[] filePaths = cmd.getArgs();
 
 		ObjectMapper mapper = new ObjectMapper();
@@ -50,8 +60,8 @@ public class TestRestrictions {
 				try {
 					matrix.put("id", tname + "/" + matrix.get("id").asText());
 					matrix.putArray("errors");
-					processMatrix(matrix, treeType, tname);
-				} catch (Exception | OutOfMemoryError e) {
+					processMatrix(matrix, treeType, tname, allRestrictions);
+				} catch (Exception | OutOfMemoryError | AssertionError e) {
 					ArrayNode errors = (ArrayNode) matrix.get("errors");
 					StringWriter sw = new StringWriter();
 					PrintWriter pw = new PrintWriter(sw);
@@ -60,7 +70,9 @@ public class TestRestrictions {
 					matrix.put("valid", false);
 					matrix.put("tree_type", treeType.toString());
 					matrix.put("name", tname);
-					matrix.remove("restrictions");
+					if (!allRestrictions) {
+						matrix.remove("restrictions");
+					}
 				}
 				
 				if (i == REPETITIONS - 1) {
@@ -70,7 +82,7 @@ public class TestRestrictions {
 		}
 	}
 
-	private static void processMatrix(ObjectNode matrix, TreeType treeType, String tname) throws Exception {
+	private static void processMatrix(ObjectNode matrix, TreeType treeType, String tname, boolean allRestrictions) throws Exception {
 		int numLeaves = matrix.get("cols").asInt();
 
 		ConsecutiveOnesInterface tree;
@@ -94,10 +106,11 @@ public class TestRestrictions {
 		long totalRestrictionTime = 0;
 		long totalCleanupTime = 0;
 		ArrayNode restrictions = (ArrayNode) matrix.get("restrictions");
-		ArrayNode errors = (ArrayNode) matrix.get("errors");
+		Set<String> matrixErrors = new HashSet<>();
 		boolean complete = false;
 		for (int i = 0; i < restrictions.size(); ++i) {
-			JsonNode consecutive = restrictions.get(i);
+			ArrayList<String> restrictionErrors = new ArrayList<>();
+			JsonNode consecutive = allRestrictions ? restrictions.get(i).get("consecutive") : restrictions.get(i);
 
 			boolean possible = tree.applyRestriction(parseRestriction(consecutive));
 			long restrictionTime = tree.getTime();
@@ -111,44 +124,54 @@ public class TestRestrictions {
 			
 			boolean last = i == restrictions.size() - 1;
 			if (!last && !possible) {
-				errors.add("possible");
+				restrictionErrors.add("possible");
 				break;
 			}
-			
-			if (last) {
-				ObjectNode lastRestriction = (ObjectNode) matrix.get("last_restriction");
-				lastRestriction.put("time", restrictionTime);
-				lastRestriction.put("cleanup_time", cleanUpTime);
-				lastRestriction.put("possible", possible);
+
+			if (last || allRestrictions) {
+				ObjectNode restrictionResults = (ObjectNode) (allRestrictions ? restrictions.get(i) : matrix.get("last_restriction"));
+				restrictionResults.put("time", restrictionTime);
+				restrictionResults.put("cleanup_time", cleanUpTime);
+				restrictionResults.put("possible", possible);
 				String fingerprint = tree.getFingerprint();
-				lastRestriction.put("fingerprint", fingerprint);
+				restrictionResults.put("fingerprint", fingerprint);
 				String uniqueID = tree.uniqueID();
-				lastRestriction.put("uid", uniqueID);
+				restrictionResults.put("uid", uniqueID);
 				if (tree instanceof JppzanettiAdapter)
-					lastRestriction.put("tree", tree.toString());
+					restrictionResults.put("tree", tree.toString());
 				
-				if (possible && !fingerprint.equals(lastRestriction.get("exp_fingerprint").asText())) {
-					errors.add("fingerprint");
+				if (possible && !fingerprint.equals(restrictionResults.get("exp_fingerprint").asText())) {
+					restrictionErrors.add("fingerprint");
 				}
-				if (possible && !lastRestriction.get("exp_uid").asText().isEmpty() && !uniqueID.isEmpty() && !lastRestriction.get("exp_uid").asText().equals(uniqueID)) {
-					errors.add("uid");
+				if (possible && !restrictionResults.get("exp_uid").asText().isEmpty() && !uniqueID.isEmpty() && !restrictionResults.get("exp_uid").asText().equals(uniqueID)) {
+					restrictionErrors.add("uid");
 				}
-				if (possible != lastRestriction.get("exp_possible").asBoolean()) {
-					errors.add("possible");
+				if (possible != restrictionResults.get("exp_possible").asBoolean()) {
+					restrictionErrors.add("possible");
 				}
-				
+				matrixErrors.addAll(restrictionErrors);
+				restrictionResults.put("errors", String.valueOf(restrictionErrors));
+				restrictionResults.put("valid", restrictionErrors.isEmpty());
+				if (allRestrictions) {
+					restrictionResults.remove("consecutive");
+				}
 				complete = true;
 			}
 		}
-
+		ArrayNode errors = (ArrayNode) matrix.get("errors");
+		for (String error: matrixErrors) {
+			errors.add(error);
+		}
 		matrix.put("tree_type", treeType.toString());
 		matrix.put("name", tname);
 		matrix.put("total_time", initTime + totalCleanupTime + totalRestrictionTime);
 		matrix.put("total_restriction_time", totalRestrictionTime);
 		matrix.put("total_cleanup_time", totalCleanupTime);
 		matrix.put("complete", complete);
-		matrix.put("valid", errors.isEmpty());
-		matrix.remove("restrictions");
+		matrix.put("valid", matrixErrors.isEmpty());
+		if (!allRestrictions) {
+			matrix.remove("restrictions");
+		}
 	}
 
 	private static int[] parseRestriction(JsonNode consecutive) {

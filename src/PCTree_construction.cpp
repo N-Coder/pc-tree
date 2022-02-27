@@ -45,6 +45,14 @@ PCTree::PCTree(const std::string &str, bool keep_ids) : PCTree() {
                         created = newNode(PCNodeType::Leaf, parent, nextIndex);
                     }
                     break;
+                case '{':
+                    if (stack.empty() && getLeafCount() > 0)
+                        throw std::invalid_argument("Invalid PC-Tree");
+
+                    OGDF_ASSERT(parent == nullptr);
+                    created = newNode(PCNodeType::Leaf, parent, nextIndex);
+                    stack.push(created);
+                    break;
                 case '[':
                     if (stack.empty() && getLeafCount() > 0)
                         throw std::invalid_argument("Invalid PC-Tree");
@@ -77,6 +85,16 @@ PCTree::PCTree(const std::string &str, bool keep_ids) : PCTree() {
                     }
                     stack.pop();
                     break;
+                case '}':
+                    if (stack.empty() || stack.top()->nodeType != PCNodeType::Leaf)
+                        throw std::invalid_argument("Invalid PC-Tree");
+
+                    if (previousChar != ']' && previousChar != ')') {
+                        created = newNode(PCNodeType::Leaf, parent, nextIndex);
+                    }
+                    stack.pop();
+                    OGDF_ASSERT(stack.empty());
+                    break;
                 default:
                     break;
             }
@@ -96,7 +114,7 @@ PCTree::PCTree(const std::string &str, bool keep_ids) : PCTree() {
 
 PCTree::PCTree::PCTree(const PCTree &other, PCTreeNodeArray<PCNode *> &nodeMapping, bool keep_ids) : PCTree() {
     nodeMapping.init(other);
-    for (PCNode *other_node : other.allNodes()) {
+    for (PCNode *other_node: other.allNodes()) {
         PCNode *parent = other_node->getParent();
         int id = -1;
         if (keep_ids) {
@@ -118,11 +136,18 @@ PCTree::PCTree::PCTree(const PCTree &other, PCTreeNodeArray<PCNode *> &nodeMappi
 
 
 PCTree::~PCTree() {
+    if (rootNode != nullptr && rootNode->isLeaf()) {
+        // remove root from list of leaves so that it will show up last in the queue
+        changeNodeType(rootNode, PCNodeType::PNode);
+    }
     while (!leaves.empty()) {
         PCNode *node = leaves.back();
         PCNode *parent = node->getParent();
         PCNodeType type = node->getNodeType();
-        if (node == rootNode) {
+        bool is_root = node == rootNode;
+        OGDF_ASSERT((parent == nullptr) == is_root);
+        if (is_root) {
+            OGDF_ASSERT(leaves.size() == 1);
             rootNode = nullptr;
         }
         node->detach();
@@ -132,6 +157,13 @@ PCTree::~PCTree() {
         }
         if (parent != nullptr && parent->childCount == 0) {
             leaves.push_back(parent);
+        }
+        if (is_root) {
+            OGDF_ASSERT(leaves.empty());
+            OGDF_ASSERT(rootNode == nullptr);
+        } else {
+            OGDF_ASSERT(!leaves.empty());
+            OGDF_ASSERT(rootNode != nullptr);
         }
     }
 #ifdef PCTREE_REUSE_NODES
@@ -245,7 +277,6 @@ PCNodeType PCTree::changeNodeType(PCNode *node, PCNodeType newType) {
         while (curr != nullptr) {
             if (oldType == PCNodeType::CNode) {
                 OGDF_ASSERT(curr->parentPNode == nullptr);
-                OGDF_ASSERT(parents.find(curr->parentCNodeId) == node->nodeListIndex);
             } else {
                 OGDF_ASSERT(curr->parentPNode == node);
                 OGDF_ASSERT(curr->parentCNodeId == -1);
@@ -283,6 +314,7 @@ void PCTree::replaceLeaf(int leafCount, PCNode *leaf, std::vector<PCNode *> *add
     OGDF_ASSERT(leaf->isLeaf());
     OGDF_ASSERT(leafCount > 1);
     if (getLeafCount() <= 2) {
+        changeNodeType(leaf->getParent(), PCNodeType::PNode);
         insertLeaves(leafCount, leaf->getParent(), added);
         leaf->detach();
         destroyNode(leaf);
@@ -309,6 +341,16 @@ PCNode *PCTree::mergeLeaves(std::vector<PCNode *> &consecutiveLeaves, bool assum
             child->detach();
             parent->replaceWith(child);
             destroyNode(parent);
+        } else if (parent->childCount == 2 && parent == rootNode && leaves.size() > 2) {
+            PCNode *leafChild = parent->child1->isLeaf() ? parent->child1 : parent->child2;
+            PCNode *nonLeafChild = parent->getOtherOuterChild(leafChild);
+            OGDF_ASSERT(leafChild->isLeaf());
+            OGDF_ASSERT(!nonLeafChild->isLeaf());
+            nonLeafChild->detach();
+            leafChild->detach();
+            rootNode = nonLeafChild;
+            destroyNode(parent);
+            nonLeafChild->appendChild(leafChild);
         } else {
             OGDF_ASSERT(parent->getChildCount() > 1);
         }

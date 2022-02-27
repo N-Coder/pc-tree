@@ -79,7 +79,7 @@ bool PCTree::isTrivialRestriction(std::vector<PCNode *> &consecutiveLeaves) cons
 
 void PCTree::LoggingObserver::makeConsecutiveCalled(PCTree &tree, const std::vector<PCNode *> &consecutiveLeaves) {
     log << "Tree " << tree << " with consecutive leaves [";
-    for (PCNode *leaf : consecutiveLeaves) log << leaf->index() << ", ";
+    for (PCNode *leaf: consecutiveLeaves) log << leaf->index() << ", ";
     log << "]" << std::endl;
     dump(tree, "before");
 }
@@ -121,7 +121,7 @@ void PCTree::LoggingObserver::beforeMerge(PCTree &tree, int count, PCNode *tpNei
     PCNode *central = tpNeigh->getParent();
     PCNode *fullNeigh = central->getFullNeighInsertionPointConst(tpNeigh);
     log << "Merging child #" << count << " " << tpNeigh->index() << " next to " << fullNeigh->index() << " into parent " << central->index()
-        << std::endl << "\t" << this << std::endl;
+        << std::endl << "\t" << tree << std::endl;
     dump(tree, "merge-" + std::to_string(count) + "-" + std::to_string(tpNeigh->index()));
 }
 
@@ -151,7 +151,7 @@ void PCTree::LoggingObserver::makeConsecutiveDone(PCTree &tree, Stage stage, boo
 }
 
 bool PCTree::makeConsecutive(std::vector<PCNode *> &consecutiveLeaves) {
-    for (auto obs:observers) obs->makeConsecutiveCalled(*this, consecutiveLeaves);
+    for (auto obs: observers) obs->makeConsecutiveCalled(*this, consecutiveLeaves);
     OGDF_HEAVY_ASSERT(checkValid());
 
     timestamp++;
@@ -162,10 +162,10 @@ bool PCTree::makeConsecutive(std::vector<PCNode *> &consecutiveLeaves) {
     terminalPathLength = 0;
     apexTPPred2 = nullptr;
     if (isTrivialRestriction(consecutiveLeaves)) {
-        for (PCNode *leaf : consecutiveLeaves) {
+        for (PCNode *leaf: consecutiveLeaves) {
             OGDF_ASSERT(leaf->tree == this);
         }
-        for (auto obs:observers) obs->makeConsecutiveDone(*this, Observer::Stage::Trivial, true);
+        for (auto obs: observers) obs->makeConsecutiveDone(*this, Observer::Stage::Trivial, true);
         return true;
     }
 
@@ -175,37 +175,37 @@ bool PCTree::makeConsecutive(std::vector<PCNode *> &consecutiveLeaves) {
     if (firstPartial == nullptr) {
         OGDF_ASSERT(lastPartial == nullptr);
         OGDF_ASSERT(partialCount == 0);
-        for (auto obs:observers) obs->makeConsecutiveDone(*this, Observer::Stage::NoPartials, true);
+        for (auto obs: observers) obs->makeConsecutiveDone(*this, Observer::Stage::NoPartials, true);
         return true;
     }
     OGDF_ASSERT(lastPartial != nullptr);
     OGDF_ASSERT(partialCount > 0);
-    for (auto obs:observers) obs->labelsAssigned(*this, firstPartial, lastPartial, partialCount);
+    for (auto obs: observers) obs->labelsAssigned(*this, firstPartial, lastPartial, partialCount);
 
     PC_PROFILE_ENTER(1, "find_tp");
     bool find_tp = findTerminalPath();
     PC_PROFILE_EXIT(1, "find_tp");
     if (!find_tp) {
-        for (auto obs:observers) obs->makeConsecutiveDone(*this, Observer::Stage::InvalidTP, false);
+        for (auto obs: observers) obs->makeConsecutiveDone(*this, Observer::Stage::InvalidTP, false);
         return false;
     }
     OGDF_ASSERT(apexCandidate != nullptr);
     OGDF_ASSERT(apexCandidateIsFix == true);
-    for (auto obs:observers) obs->terminalPathFound(*this, apexCandidate, apexTPPred2, terminalPathLength);
+    for (auto obs: observers) obs->terminalPathFound(*this, apexCandidate, apexTPPred2, terminalPathLength);
 
     PC_PROFILE_ENTER(1, "update_tp");
     if (terminalPathLength == 1) {
         OGDF_ASSERT(apexCandidate->tempInfo().tpPred == nullptr);
         updateSingletonTerminalPath();
         PC_PROFILE_EXIT(1, "update_tp");
-        for (auto obs:observers) obs->makeConsecutiveDone(*this, Observer::Stage::SingletonTP, true);
+        for (auto obs: observers) obs->makeConsecutiveDone(*this, Observer::Stage::SingletonTP, true);
         return true;
     }
     OGDF_ASSERT(apexCandidate->tempInfo().tpPred != nullptr);
     PC_PROFILE_ENTER(2, "update_tp_central");
     PCNode *central = createCentralNode();
     PC_PROFILE_EXIT(2, "update_tp_central");
-    for (auto obs:observers) obs->centralCreated(*this, central);
+    for (auto obs: observers) obs->centralCreated(*this, central);
 
     PCNode::TempInfo &ctinfo = central->tempInfo();
     int merged = updateTerminalPath(central, ctinfo.tpPred);
@@ -214,7 +214,7 @@ bool PCTree::makeConsecutive(std::vector<PCNode *> &consecutiveLeaves) {
     OGDF_ASSERT(merged == terminalPathLength - 1);
     PC_PROFILE_EXIT(1, "update_tp");
 
-    for (auto obs:observers) obs->makeConsecutiveDone(*this, Observer::Stage::Done, true);
+    for (auto obs: observers) obs->makeConsecutiveDone(*this, Observer::Stage::Done, true);
 #ifdef OGDF_HEAVY_DEBUG
     OGDF_HEAVY_ASSERT(checkValid());
     std::list<PCNode *> order;
@@ -269,10 +269,12 @@ void PCTree::removePartialNode(PCNode *partial) {
 }
 
 void PCTree::assignLabels(std::vector<PCNode *> &fullLeaves, std::vector<PCNode *> *fullNodeOrder) {
+    firstPartial = lastPartial = nullptr;
+    partialCount = 0;
     if (fullNodeOrder != nullptr)
         fullNodeOrder->reserve(cNodeCount + pNodeCount);
     std::queue<PCNode *> full_nodes;
-    for (PCNode *leaf : fullLeaves) {
+    for (PCNode *leaf: fullLeaves) {
         OGDF_ASSERT(leaf && leaf->tree == this);
         OGDF_ASSERT(leaf->isLeaf());
         full_nodes.emplace(leaf);
@@ -459,7 +461,7 @@ bool PCTree::findTerminalPath() {
                 }
                 apexTPPred2 = node;
                 if (parent->nodeType == PCNodeType::CNode && parent_tinfo.label == NodeLabel::Empty) {
-                    if (!node->areNeighborsAdjacent(parent_tinfo.tpPred, apexTPPred2)) {
+                    if (!parent->areNeighborsAdjacent(parent_tinfo.tpPred, apexTPPred2)) {
                         log << "Apex is empty C-Node, but partial predecessors aren't adjacent!" << std::endl;
                         return false;
                     } else {
@@ -618,7 +620,7 @@ PCNode *PCTree::createCentralNode() {
         // assembly done, verify
 #ifdef OGDF_DEBUG
         log << "Central " << central << " and neighbors [";
-        for (PCNode *neigh : c_neighbors)
+        for (PCNode *neigh: c_neighbors)
             log << neigh->index() << ", ";
         log << "]" << std::endl;
         OGDF_ASSERT(central->getDegree() == c_neighbors.size());
@@ -686,7 +688,7 @@ int PCTree::updateTerminalPath(PCNode *central, PCNode *tpNeigh) {
         OGDF_ASSERT(tinfo.tpSucc != nullptr);
         OGDF_ASSERT(tinfo.label != NodeLabel::Full);
         OGDF_ASSERT(tinfo.label != NodeLabel::Unknown || tinfo.tpPred != nullptr);
-        for (auto obs:observers) obs->beforeMerge(*this, count, tpNeigh);
+        for (auto obs: observers) obs->beforeMerge(*this, count, tpNeigh);
         PCNode *nextTPNeigh = tinfo.tpPred;
         PCNode *otherEndOfFullBlock;
         if (tpNeigh->nodeType == PCNodeType::PNode) {
@@ -717,11 +719,15 @@ int PCTree::updateTerminalPath(PCNode *central, PCNode *tpNeigh) {
             PC_PROFILE_ENTER(2, "update_tp_cnode");
             OGDF_ASSERT(tpNeigh->nodeType == PCNodeType::CNode);
             PCNode *otherNeigh = central->getNextNeighbor(fullNeigh, tpNeigh);
-            if (tpNeigh->sibling1 == fullNeigh) {
+            if (tpNeigh->sibling1 == fullNeigh || tpNeigh->sibling2 == otherNeigh) {
                 std::swap(tpNeigh->sibling1, tpNeigh->sibling2);
             }
-            OGDF_ASSERT(tpNeigh->sibling1 == otherNeigh || tpNeigh->sibling1 == nullptr);
-            OGDF_ASSERT(tpNeigh->sibling2 == fullNeigh || (tpNeigh->sibling2 == nullptr && central->getParent() == fullNeigh));
+            OGDF_ASSERT(tpNeigh->sibling1 == otherNeigh
+                        || (tpNeigh->sibling1 == nullptr && central->getParent() == otherNeigh)
+                        || (tpNeigh->sibling1 == nullptr && central->getParent() == nullptr && central->getOtherOuterChild(tpNeigh) == otherNeigh));
+            OGDF_ASSERT(tpNeigh->sibling2 == fullNeigh
+                        || (tpNeigh->sibling2 == nullptr && central->getParent() == fullNeigh)
+                        || (tpNeigh->sibling2 == nullptr && central->getParent() == nullptr && central->getOtherOuterChild(tpNeigh) == fullNeigh));
 
             if (tpNeigh->child1 == tinfo.fbEnd1 || tpNeigh->child1 == tinfo.fbEnd2) {
                 tpNeigh->flip();
@@ -760,7 +766,7 @@ int PCTree::updateTerminalPath(PCNode *central, PCNode *tpNeigh) {
             nextTPNeigh->tempInfo().replaceNeighbor(tpNeigh, central);
         tpNeigh = nextTPNeigh;
         count++;
-        for (auto obs:observers) obs->afterMerge(*this, tpNeigh);
+        for (auto obs: observers) obs->afterMerge(*this, tpNeigh);
     }
     return count;
 }
@@ -905,12 +911,12 @@ PCNode *PCTree::splitOffFullPNode(PCNode *node, bool skip_parent) {
         OGDF_ASSERT(fullNode != parent);
         OGDF_ASSERT(node->isParentOf(fullNode));
         fullNode->detach();
-        for (auto obs:observers) obs->fullNodeSplit(*this, fullNode);
+        for (auto obs: observers) obs->fullNodeSplit(*this, fullNode);
         return fullNode;
     }
     PCNode *fullNode = newNode(PCNodeType::PNode);
     fullNode->tempInfo().label = NodeLabel::Full;
-    for (PCNode *fullChild : tinfo.fullNeighbors) {
+    for (PCNode *fullChild: tinfo.fullNeighbors) {
         if (skip_parent) {
             if (fullChild == parent) continue;
         } else {
@@ -926,6 +932,6 @@ PCNode *PCTree::splitOffFullPNode(PCNode *node, bool skip_parent) {
     } else {
         OGDF_ASSERT(fullNode->getDegree() >= 2);
     }
-    for (auto obs:observers) obs->fullNodeSplit(*this, fullNode);
+    for (auto obs: observers) obs->fullNodeSplit(*this, fullNode);
     return fullNode;
 }

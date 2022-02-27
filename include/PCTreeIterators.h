@@ -109,7 +109,11 @@ namespace pc_tree {
                 const PCTree &T, PCNode *start,
                 std::function<bool(PCNode * )> visit = return_true,
                 std::function<bool(PCNode * )> descend_from = return_true
-        ) : m_pending({start}), m_visit(std::move(visit)), m_descend(std::move(descend_from)) {}
+        ) : m_pending({start}), m_visit(std::move(visit)), m_descend(std::move(descend_from)) {
+            if (!m_pending.empty() && !m_visit(top())) {
+                next();
+            }
+        }
 
         bool operator==(const FilteringPCTreeWalk &rhs) const {
             return m_pending == rhs.m_pending;
@@ -155,13 +159,14 @@ namespace pc_tree {
         }
 
         void next() {
-            OGDF_ASSERT(!m_pending.empty());
-            PCNode *node = top();
-            m_pending.pop();
-            if (m_descend(node))
-                for (PCNode *neigh : node->children())
-                    if (m_visit(neigh))
+            do {
+                OGDF_ASSERT(!m_pending.empty());
+                PCNode *node = top();
+                m_pending.pop();
+                if (m_descend(node))
+                    for (PCNode *neigh: node->children())
                         m_pending.push(neigh);
+            } while (!m_pending.empty() && !m_visit(top()));
         }
 
         explicit operator bool() const {

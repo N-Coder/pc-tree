@@ -210,9 +210,16 @@ namespace pc_tree {
 
         PCNode *splitOffFullPNode(PCNode *node, bool skip_parent);
 
-        bool findNodeRestrictions(PCTree &applyTo, PCTreeNodeArray<PCNode *> &mapping);
+        bool findNodeRestrictions(PCTree &applyTo, PCTreeNodeArray<PCNode *> &mapping,
+                                  PCTreeNodeArray<std::vector<PCNode *>> &blockNodes,
+                                  PCTreeNodeArray<std::vector<PCNode *>> &subtreeNodes,
+                                  PCTreeNodeArray<PCNode *> &leafPartner,
+                                  PCTreeNodeArray<bool> &isFront);
 
-        void restoreSubtrees(std::list<PCNode *> &oldLeaves);
+        void restoreSubtrees(PCTreeNodeArray<std::vector<PCNode *>> &blockNodes,
+                             PCTreeNodeArray<std::vector<PCNode *>> &subtreeNodes,
+                             PCTreeNodeArray<PCNode *> &leafPartner,
+                             PCTreeNodeArray<bool> &isFront);
 
     public:
         struct Observer {

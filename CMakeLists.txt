@@ -98,12 +98,24 @@ make_pc_target(construction)
 add_executable(restriction ${SOURCE_FILES} src/test/restriction.cpp)
 make_pc_target(restriction)
 
+add_executable(test ${SOURCE_FILES} src/test/test.cpp)
+make_pc_target(test)
+
+add_executable(intersection ${SOURCE_FILES} src/test/intersection.cpp)
+target_include_directories(intersection PUBLIC "include")
+target_include_directories(intersection PRIVATE "libraries" "libraries/bandit")
+target_link_libraries(intersection OGDF bigInt hsuPC)
+
 add_executable(make_restrictions_planarity ${SOURCE_FILES} src/exec/make_restrictions_planarity.cpp)
 make_pc_target(make_restrictions_planarity)
 target_link_libraries(make_restrictions_planarity ${COMPARE_LIBRARIES} stdc++fs)
 
 add_executable(make_restrictions_tree ${SOURCE_FILES} src/exec/make_restrictions_tree.cpp)
 make_pc_target(make_restrictions_tree)
+
+add_executable(make_restrictions_matrix ${SOURCE_FILES} src/exec/make_restrictions_matrix.cpp)
+make_pc_target(make_restrictions_matrix)
+target_link_libraries(make_restrictions_matrix ${COMPARE_LIBRARIES} stdc++fs)
 
 add_executable(make_graphs ${SOURCE_FILES} src/exec/make_graphs.cpp)
 make_pc_target(make_graphs)

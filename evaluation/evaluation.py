@@ -23,6 +23,7 @@ JAVA_DIR = MAIN_DIR.joinpath("evaluation/javaEvaluation")
 JAVA_EVAL_RESTRS_PATH = JAVA_DIR.joinpath("build/libs/testRestrictions.jar")
 JAVA_EVAL_PLAN_PATH = JAVA_DIR.joinpath("build/libs/testPlanarity.jar")
 SAGEMATH_PATH = EVALUATION_DIR.joinpath("sagemath/main.py")
+DEFAULT_TREES = ["UFPC", "HsuPC", "BiVoc", "Reisle", "Gregable", "OGDF", "GraphSet", "CppZanetti", "Zanetti", "JGraphEd", "SageMath2"]
 
 db = pymongo.MongoClient(
     "pc-tree-mongo", connectTimeoutMS=2000 
@@ -92,14 +93,15 @@ def compile(local, clean):
     rsh.make(*tasks, "all", "-j", 6 if local else 18, _cwd=BUILD_DIR, _out=sys.stdout, _err=sys.stderr)
 
 @cli.command(context_settings=dict(ignore_unknown_options=True))
-@click.argument('method', type=click.Choice(['planarity', 'tree'], case_sensitive=False))
+@click.argument('method', type=click.Choice(['planarity', 'tree', 'matrix'], case_sensitive=False))
 @click.argument('args', nargs=-1, type=click.UNPROCESSED)
 def make_restrictions(method, args):
     MATRIX_DIR.mkdir(exist_ok=True)
 
     def parse_jsons():
         cmd = {"planarity": sh.Command("make_restrictions_planarity", [BUILD_DIR]),
-               "tree": sh.Command("make_restrictions_tree", [BUILD_DIR])}
+               "tree": sh.Command("make_restrictions_tree", [BUILD_DIR]),
+               "matrix": sh.Command("make_restrictions_matrix", [BUILD_DIR])}
         for line in cmd[method](args, MATRIX_DIR, _iter=True):
             if not line.startswith(("GRAPH:", "TREE:", "MATRIX:", "RESTRICTION:")):
                 if len(line) > 500:
@@ -122,42 +124,19 @@ def make_restrictions(method, args):
         print(raw)
 
 
-
-@cli.command()
-@click.argument("calls", nargs=-1)
-@click.option("--calls-from", "-f", multiple=True, type=click.File("rt"))
-@click.option("--nodes", multiple=True)
-@click.option("--nodes-from", default=1000)
-@click.option("--nodes-to", default=21000)
-@click.option("--nodes-step", default=1000)
-@click.option("--planar", is_flag=True)
-@click.option("--seed", default=0)
-@click.option("--sbatch-options", default="")
-def batch_make_restrictions(calls, calls_from, nodes, nodes_from, nodes_to, nodes_step, planar, seed, sbatch_options):
+def start_batch_make(calls, sbatch_options):
     db.data_sources.create_index(
         [("id", ASC)], name="id", unique=True, background=True)
     db.matrices.create_index(
         [("id", ASC)], name="id", unique=True, background=True)
     db.matrices.create_index(
-        [("parent_id", ASC), ("idx", ASC)], name="parent_id", unique=True, background=True)
+        [("parent_id", ASC), ("idx", ASC)], name="parent_id", unique=False, background=True)
     db.restrictions.create_index(
         [("id", ASC)], name="id", unique=True, background=True)
     db.restrictions.create_index(
         [("parent_id", ASC), ("idx", ASC)], name="parent_id", unique=True, background=True)
-    calls = [shlex.split(l) for l in calls]
-    if calls_from:
-        calls.extend(shlex.split(l) for f in calls_from for l in f)
-    if not calls:
-        if not nodes:
-            nodes = range(nodes_from, nodes_to, nodes_step)
-        edges = [(lambda n: 2 * n), (lambda n: 3 * n - 6)]
-        calls = [
-            ("planarity", "-n", n, "-m", m(n), "-s", seed, *(["-p"] if planar else []))
-            for n in nodes
-            for m in edges
-        ]
-
     script = textwrap.dedent(
+
         """
         #!/bin/bash
         TASKS=({calls_str})
@@ -172,13 +151,54 @@ def batch_make_restrictions(calls, calls_from, nodes, nodes_from, nodes_to, node
 
 
 @cli.command()
+@click.argument("calls", nargs=-1)
+@click.option("--calls-from", "-f", multiple=True, type=click.File("rt"))
+@click.option("--nodes", multiple=True)
+@click.option("--nodes-from", default=1000)
+@click.option("--nodes-to", default=21000)
+@click.option("--nodes-step", default=1000)
+@click.option("--planar", is_flag=True)
+@click.option("--seed", default=0)
+@click.option("--sbatch-options", default="")
+def batch_make_restrictions(calls, calls_from, nodes, nodes_from, nodes_to, nodes_step, planar, seed, sbatch_options):
+    calls = [shlex.split(l) for l in calls]
+    if calls_from:
+        calls.extend(shlex.split(l) for f in calls_from for l in f)
+    if not calls:
+        if not nodes:
+            nodes = range(nodes_from, nodes_to, nodes_step)
+        edges = [(lambda n: 2 * n), (lambda n: 3 * n - 6)]
+        calls = [
+            ("planarity", "-n", n, "-m", m(n), "-s", seed, *(["-p"] if planar else []))
+            for n in nodes
+            for m in edges
+        ]
+
+    start_batch_make(calls, sbatch_options)
+
+
+@cli.command()
+@click.option("--min-size", default=10)
+@click.option("--max-size", default=1000)
+@click.option("--start-seed", default=1)
+@click.option("--count", default=1)
+@click.option("--sbatch-options", default="")
+def batch_make_restrictions_matrix(min_size, max_size, start_seed, count, sbatch_options):
+    calls = [("matrix", "-l", min_size, "-h", max_size, "-s", start_seed + i) for i in range(count)]
+
+    start_batch_make(calls, sbatch_options)
+
+
+@cli.command()
 @click.option("--type", "-t", "ttypes", multiple=True, default=["UFPC"])
+@click.option("--all", "-A", is_flag=True)
 @click.argument("infiles", required=True, nargs=-1)
-def test_restrictions(ttypes, infiles):
+def test_restrictions(ttypes, all, infiles):
     test_restrictions = sh.Command("test_restrictions", [BUILD_DIR])
     #likwid = sh.Command("likwid-perfctr", [BUILD_DIR]).bake("-C", 0, "-g", "CYCLE_STALLS", "-o", "likwid.txt", "-m")
     # likwid = sh.Command("likwid-perfctr").bake("-C", "S0:2", "-g", "CYCLE_STALLS", "-o", "likwid.txt", "-m")
     java = sh.Command("java").bake("-jar", JAVA_EVAL_RESTRS_PATH)
+    all_restrictions = "-A" if all else []
     test_commands = {
         "UFPC": test_restrictions.bake("-t", "UFPC"),
         "HsuPC": test_restrictions.bake("-t", "HsuPC"),
@@ -200,28 +220,60 @@ def test_restrictions(ttypes, infiles):
         #                           "-a", "-t", "UFPC", "-n", "UFPC-likwid"),
     }
 
+    output_collection = db.matrices_results_2 if all_restrictions else db.matrices_results
     for ttype in ttypes:
         def parse_jsons():
             if ttype in ("Zanetti", "JGraphEd", "GraphTea"):
-                cmd = test_commands[ttype]("-n", ttype, infiles)
+                cmd = test_commands[ttype]("-n", ttype, all_restrictions, infiles)
                 for l in cmd:
                     j = json.loads(l)
                     yield pymongo.ReplaceOne({"id": j["id"]}, j, upsert=True)
             else:
                 for file in infiles:
-                    cmd = test_commands[ttype]("-n", ttype, file)
+                    cmd = test_commands[ttype]("-n", ttype, all_restrictions, file)
                     for l in cmd:
                         j = json.loads(l)
                         yield pymongo.ReplaceOne({"id": j["id"]}, j, upsert=True)
 
-        for res in bulk_write_batched(db.matrices_results, parse_jsons()):
+        for res in bulk_write_batched(output_collection, parse_jsons()):
             raw = dict(res.bulk_api_result)
             raw["upserted"] = len(raw["upserted"])
             print(raw)
 
 
+def create_job_lookup(files, batchsize):
+    with tempfile.NamedTemporaryFile(mode="w", delete=False, dir=EVALUATION_DIR) as f:
+        i = 0
+        for file in files:
+            i += 1
+            f.write("%s " % file)
+            if i % batchsize == 0:
+                f.write("\n")
+        return f.name
+
+
+def start_jobs(files, tmpfile, ttypes, batchsize, all_restrictions):
+    for ttype in ttypes:
+        script = textwrap.dedent(
+            """
+            #!/bin/bash
+            FILES=$(sed "$((SLURM_ARRAY_TASK_ID + 1))q;d" {lookup})
+            {exec} -u {file} test-restrictions --type {ttype} {all} ${{FILES}} 
+            """.format(
+                exec=sys.executable, file=__file__,
+                lookup=tmpfile,
+                all="-A" if all_restrictions else "",
+                **locals()
+            )).strip()
+        sbatch = bake_sbatch(array="0-%s" % (math.ceil(len(files) / batchsize) - 1), job_name="pctree %s test-planarity %s" % (ttype, tmpfile.rpartition("/")[2]), _in=script)
+        res = str(sbatch()).strip()
+        match = re.fullmatch("Submitted batch job ([0-9]+)", res)
+        jobid = match.group(1)
+        print(jobid)
+        time.sleep(1)
+
 @cli.command()
-@click.option("--type", "-t", "ttypes", multiple=True, default=["UFPC", "HsuPC", "BiVoc", "Reisle", "Gregable", "OGDF", "GraphSet", "CppZanetti", "Zanetti", "JGraphEd"])
+@click.option("--type", "-t", "ttypes", multiple=True, default=DEFAULT_TREES)
 @click.option("--query", "-q", type=JSONType, default={})
 @click.option("--sort", "-o", type=JSONType, default={})
 @click.option("--limit", "-l", type=int, default=0)
@@ -238,41 +290,35 @@ def batch_test_restrictions(ttypes, query, sort, limit, skip, batchsize):
         [("parent_id", ASC), ("idx", ASC)], name="parent_id", unique=True, background=True)
     infiles = []
     cur = db.data_sources.find(query, sort=sort, limit=limit, skip=skip)
-    def create_job_lookup(files):
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, dir=EVALUATION_DIR) as f:
-            i = 0
-            for file in files:
-                i += 1
-                f.write("%s " % file)
-                if i % batchsize == 0:
-                    f.write("\n")
-            return f.name
 
-    def start_jobs(files, tmpfile):
-        for ttype in ttypes:
-            script = textwrap.dedent(
-                """
-                #!/bin/bash
-                FILES=$(sed "$((SLURM_ARRAY_TASK_ID + 1))q;d" {lookup})
-                {exec} -u {file} test-restrictions --type {ttype} ${{FILES}}
-                """.format(
-                    exec=sys.executable, file=__file__,
-                    lookup=tmpfile,
-                    **locals()
-                )).strip()
-            sbatch = bake_sbatch(array="0-%s" % (math.ceil(len(files) / batchsize) - 1), job_name="pctree %s test-planarity %s" % (ttype, tmpfile.rpartition("/")[2]), _in=script)
-            res = str(sbatch()).strip()
-            match = re.fullmatch("Submitted batch job ([0-9]+)", res)
-            jobid = match.group(1)
-            print(jobid)
-            time.sleep(1)
 
     for graph in cur:
         for matrixFile in graph["matrices"]:
             infiles.append(matrixFile)
-    tmpfile = create_job_lookup(infiles)
-    start_jobs(infiles, tmpfile)
+    tmpfile = create_job_lookup(infiles, batchsize)
+    start_jobs(infiles, tmpfile, ttypes, batchsize, False)
 
+
+@cli.command()
+@click.option("--type", "-t", "ttypes", multiple=True, default=DEFAULT_TREES)
+@click.option("--query", "-q", type=JSONType, default={})
+@click.option("--sort", "-o", type=JSONType, default={})
+@click.option("--limit", "-l", type=int, default=0)
+@click.option("--skip", "-s", type=int, default=0)
+@click.option("--batchsize", "-b", type=int, default=1000)
+def batch_test_matrices(ttypes, query, sort, limit, skip, batchsize):
+    db.matrices_results_2.create_index(
+        [("id", ASC)], name="id", unique=True, background=True)
+    db.matrices_results_2.create_index(
+        [("parent_id", ASC), ("idx", ASC)], name="parent_id", background=True)
+    infiles = []
+    cur = db.matrices.find(query, sort=sort, limit=limit, skip=skip)
+
+    for matrix in cur:
+        matrixFile = matrix["path"]
+        infiles.append(matrixFile)
+    tmpfile = create_job_lookup(infiles, batchsize)
+    start_jobs(infiles, tmpfile, ttypes, batchsize, True)
 
 
 @cli.command()

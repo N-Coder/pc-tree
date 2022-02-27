@@ -38,7 +38,7 @@ void PCTree::getTree(Graph &tree, GraphAttributes *g_a, PCTreeNodeArray<ogdf::no
         nodeLabel = g_a->has(GraphAttributes::nodeLabel);
     }
 
-    for (PCNode *pc_node : allNodes()) {
+    for (PCNode *pc_node: allNodes()) {
         ogdf::node g_node = pc_repr[pc_node] = tree.newNode();
         if (g_repr != nullptr) {
             (*g_repr)[g_node] = pc_node;
@@ -103,12 +103,17 @@ std::ostream &operator<<(std::ostream &os, const PCTree *tree) {
             stack.push(")");
         } else {
             OGDF_ASSERT(base->nodeType == PCNodeType::Leaf);
-            os << base->id;
-            continue;
+            if (base != tree->rootNode) {
+                os << base->id;
+                continue;
+            } else {
+                os << base->id << ":{";
+                stack.push("}");
+            }
         }
 
         bool space = false;
-        for (PCNode *node:base->children()) {
+        for (PCNode *node: base->children()) {
             if (space)
                 stack.push(", ");
             OGDF_ASSERT(node != nullptr);
@@ -153,14 +158,14 @@ std::ostream &PCTree::uniqueID(std::ostream &os,
 
     PCTreeNodeArray<int> order(*this, -1);
     int i = 0;
-    for (PCNode *leaf:sortedLeaves) order[leaf] = i++;
+    for (PCNode *leaf: sortedLeaves) order[leaf] = i++;
 
     PCNode *lastLeaf = sortedLeaves.back();
     sortedLeaves.resize(leaves.size() - 1);
     std::vector<PCNode *> fullNodeOrder;
     timestamp++;
     assignLabels(sortedLeaves, &fullNodeOrder);
-    for (PCNode *node:fullNodeOrder) order[node] = i++;
+    for (PCNode *node: fullNodeOrder) order[node] = i++;
 
     std::stack<std::variant<PCNode *, std::string>> stack;
     stack.push(fullNodeOrder.back());
@@ -199,7 +204,7 @@ std::ostream &PCTree::uniqueID(std::ostream &os,
                 OGDF_ASSERT(order[second] < order[children.back()]);
             } else {
                 PCNode *informedNeighbor = nullptr;
-                for (PCNode *neigh:node->neighbors()) {
+                for (PCNode *neigh: node->neighbors()) {
                     if (order[neigh] > order[node]) {
                         OGDF_ASSERT(informedNeighbor == nullptr);
                         informedNeighbor = neigh;
@@ -234,7 +239,6 @@ std::ostream &PCTree::uniqueID(std::ostream &os,
             continue;
         }
         if (node == fullNodeOrder.back()) {
-            OGDF_ASSERT(node->isParentOf(lastLeaf));
             OGDF_ASSERT(children.size() == node->tempInfo().fullNeighbors.size() + 1);
         } else {
             OGDF_ASSERT(children.size() == node->tempInfo().fullNeighbors.size());
@@ -242,7 +246,7 @@ std::ostream &PCTree::uniqueID(std::ostream &os,
         OGDF_ASSERT(order[children.front()] < order[children.back()]);
 
         bool space = false;
-        for (PCNode *child : children) {
+        for (PCNode *child: children) {
             if (space)
                 stack.push(", ");
             OGDF_ASSERT(child != nullptr);
@@ -305,7 +309,7 @@ bool PCTree::isValidOrder(std::vector<PCNode *> &order) const {
     PCTreeNodeArray<PCNode *> leafMapping(*this);
     PCTree copy(*this, leafMapping);
     PCNode *previous = nullptr;
-    for (PCNode *node : order) {
+    for (PCNode *node: order) {
         OGDF_ASSERT(node->tree == this);
         if (previous == nullptr) {
             previous = node;
@@ -318,30 +322,45 @@ bool PCTree::isValidOrder(std::vector<PCNode *> &order) const {
     }
 #ifdef OGDF_DEBUG
     OGDF_ASSERT(copy.possibleOrders() == 2);
-    OGDF_ASSERT(copy.makeConsecutive({order.front(), order.back()}));
+    OGDF_ASSERT(copy.makeConsecutive({leafMapping[order.front()], leafMapping[order.back()]}));
     std::list<PCNode *> res_order;
     copy.currentLeafOrder(res_order);
     OGDF_ASSERT(res_order.size() == order.size());
-    for (int i = 0; res_order.front() != order.front(); i++) {
+    for (int i = 0; res_order.front() != leafMapping[order.front()]; i++) {
         res_order.push_back(res_order.front());
         res_order.pop_front();
         OGDF_ASSERT(i < order.size());
     }
+    if (res_order.back() != leafMapping[order.back()]) {
+        std::reverse(res_order.begin(), res_order.end());
+        res_order.push_front(res_order.back());
+        res_order.pop_back();
+    }
     OGDF_ASSERT(res_order.size() == order.size());
-    OGDF_ASSERT(std::equal(res_order.begin(), res_order.end(), order.begin(), order.end()));
+    int i = 0;
+    for (PCNode *n: res_order) {
+        OGDF_ASSERT(n == leafMapping[order.at(i)]);
+        ++i;
+    }
 #endif
 
     return true;
 }
 
 bool PCTree::checkValid() const {
-    OGDF_ASSERT (leaves.size() > 2);
+    OGDF_ASSERT(leaves.size() >= 2); // TODO define and validate correct shape for smaller trees
     OGDF_ASSERT(rootNode != nullptr);
+
+    // bottom-up
     std::queue<PCNode *> todo;
-    for (PCNode *leaf : leaves) {
-        OGDF_ASSERT(leaf->isLeaf());
-        todo.push(leaf);
-    }
+    for (PCNode *leaf: leaves)
+        if (leaf != rootNode)
+            todo.push(leaf);
+    if (rootNode->isLeaf())
+        OGDF_ASSERT(todo.size() == leaves.size() - 1);
+    else
+        OGDF_ASSERT(todo.size() == leaves.size());
+    PCNode *lastLeaf = todo.back();
     bool leaves_done = false, root_found = false;
     int leaves_found = 0, p_nodes_found = 0, c_nodes_found = 0;
     std::vector<PCNode *> id_seen(nextNodeId, nullptr);
@@ -349,54 +368,80 @@ bool PCTree::checkValid() const {
         PCNode *node = todo.front();
         todo.pop();
 
-        if (id_seen.at(node->id) == node) continue;
-        OGDF_ASSERT(node->tree == this);
+        if (id_seen.at(node->id) == node) {
+            OGDF_ASSERT(leaves_done);
+            continue;
+        }
+        OGDF_ASSERT(node->isValidNode(this));
         OGDF_ASSERT(id_seen[node->id] == nullptr);
         id_seen[node->id] = node;
         PCNode *parent = node->getParent();
         OGDF_ASSERT((node == rootNode) == (parent == nullptr));
         if (node == rootNode) {
-            OGDF_ASSERT(node->childCount >= 3);
+            OGDF_ASSERT(leaves_done);
             root_found = true;
         } else {
+            OGDF_ASSERT(leaves_done == (node->nodeType != PCNodeType::Leaf));
             todo.push(parent);
         }
 
-        OGDF_ASSERT(leaves_done == (node->nodeType != PCNodeType::Leaf));
         if (node->nodeType == PCNodeType::PNode) {
-            OGDF_ASSERT(node->childCount >= 2);
             p_nodes_found++;
         } else if (node->nodeType == PCNodeType::CNode) {
-            OGDF_ASSERT(node->childCount >= 2);
             c_nodes_found++;
         } else {
             OGDF_ASSERT(node->isLeaf());
             leaves_found++;
         }
 
-        // check that my siblings know me or that my parent knows me as outer child
-        if (node->sibling1 != nullptr) {
-            OGDF_ASSERT(node->sibling1->isSiblingAdjacent(node));
-            OGDF_ASSERT(node->sibling1->getParent() == parent);
-        } else if (parent != nullptr) {
-            OGDF_ASSERT(parent->isChildOuter(node));
+        if (node == lastLeaf) {
+            leaves_done = true;
         }
-        if (node->sibling2 != nullptr) {
-            OGDF_ASSERT(node->sibling2->isSiblingAdjacent(node));
-            OGDF_ASSERT(node->sibling2->getParent() == parent);
-        } else if (parent != nullptr) {
-            OGDF_ASSERT(parent->isChildOuter(node));
+    }
+    OGDF_ASSERT(leaves_done);
+    OGDF_ASSERT(root_found);
+    OGDF_ASSERT(leaves_found == leaves.size());
+    OGDF_ASSERT(p_nodes_found == pNodeCount);
+    OGDF_ASSERT(c_nodes_found == cNodeCount);
+
+    // top-down
+    leaves_found = p_nodes_found = c_nodes_found = 0;
+    OGDF_ASSERT(todo.empty());
+    todo.push(rootNode);
+    while (!todo.empty()) {
+        PCNode *node = todo.front();
+        todo.pop();
+        OGDF_ASSERT(id_seen[node->id] == node);
+
+        if (node->nodeType == PCNodeType::PNode) {
+            p_nodes_found++;
+        } else if (node->nodeType == PCNodeType::CNode) {
+            c_nodes_found++;
+        } else {
+            OGDF_ASSERT(node->isLeaf());
+            leaves_found++;
         }
 
-        // check that all my children know me and that my degree is right
+        OGDF_ASSERT(node->getDegree() >= 1);
+        if (node->nodeType != PCNodeType::Leaf) {
+            if (node->getDegree() < 3 && node->childCount > 0) {
+                OGDF_ASSERT(node->child1->isLeaf());
+                OGDF_ASSERT(node->child2->isLeaf());
+            } else {
+                OGDF_ASSERT(node->getDegree() >= 3);
+            }
+        }
+
+        // also check that all my children know me and that my degree is right
         PCNode *pred = nullptr;
         PCNode *curr = node->child1;
         int children = 0;
         while (curr != nullptr) {
+            todo.push(curr);
             OGDF_ASSERT(curr->getParent() == node);
             if (node->getNodeType() == PCNodeType::CNode) {
                 OGDF_ASSERT(curr->parentPNode == nullptr);
-                OGDF_ASSERT(curr->parentCNodeId == node->nodeListIndex);
+                OGDF_ASSERT(curr->parentCNodeId == node->nodeListIndex); // getParent() updates parentCNodeId
             } else {
                 OGDF_ASSERT(curr->parentPNode == node);
                 OGDF_ASSERT(curr->parentCNodeId == -1);
@@ -406,16 +451,12 @@ bool PCTree::checkValid() const {
         }
         OGDF_ASSERT(children == node->childCount);
         OGDF_ASSERT(pred == node->child2);
-
-        if (node == leaves.back()) {
-            leaves_done = true;
-        }
     }
-    OGDF_ASSERT(leaves_done);
-    OGDF_ASSERT(root_found);
     OGDF_ASSERT(leaves_found == leaves.size());
     OGDF_ASSERT(p_nodes_found == pNodeCount);
     OGDF_ASSERT(c_nodes_found == cNodeCount);
+
+    // list c-nodes
     c_nodes_found = 0;
     for (int cid = 0; cid < cNodes.size(); cid++) {
         PCNode *node = cNodes.at(cid);
@@ -426,12 +467,6 @@ bool PCTree::checkValid() const {
     }
     OGDF_ASSERT(c_nodes_found == cNodeCount);
 
-//    if (isTrivial()) {
-//        OGDF_HEAVY_ASSERT(possibleOrders() == factorial(getLeafCount() - 1));
-//    } else {
-//        OGDF_HEAVY_ASSERT(possibleOrders() <= factorial(getLeafCount() - 1));
-//    }
-
     return true;
 }
 
@@ -439,12 +474,12 @@ void PCTree::getRestrictions(std::vector<std::vector<PCNode *>> &restrictions, P
     PCTreeNodeArray<int> readyChildren(*this, 0);
     PCTreeNodeArray<std::list<PCNode *>> subtreeLeaves(*this);
     std::queue<PCNode *> todo;
-    for (PCNode *leaf : leaves) {
+    for (PCNode *leaf: leaves) {
         if (leaf == fixedLeaf) continue;
         subtreeLeaves[leaf].push_back(leaf);
-        PCNode *parent = leaf->getParent();
-        if ((readyChildren[parent] += 1) == parent->getDegree() - 1)
-            todo.push(parent);
+        PCNode *next = leaf == rootNode ? leaf->child1 : leaf->getParent();
+        if ((readyChildren[next] += 1) == next->getDegree() - 1)
+            todo.push(next);
     }
     PCNode *central = nullptr;
     while (!todo.empty()) {
@@ -454,14 +489,14 @@ void PCTree::getRestrictions(std::vector<std::vector<PCNode *>> &restrictions, P
 
         PCNode *next = nullptr;
         PCNode *parent = node->getParent();
-        if (parent != nullptr && subtreeLeaves[parent].empty()) {
+        if (parent != nullptr && subtreeLeaves[parent].empty() && !(parent == rootNode && parent->isLeaf())) {
             next = parent;
         }
 #ifndef OGDF_DEBUG
         else
 #endif
         {
-            for (PCNode *neigh : node->neighbors()) {
+            for (PCNode *neigh: node->neighbors()) {
                 if (subtreeLeaves[neigh].empty()) {
                     OGDF_ASSERT(next == nullptr || (next == parent && neigh == parent));
                     next = neigh;
@@ -479,7 +514,7 @@ void PCTree::getRestrictions(std::vector<std::vector<PCNode *>> &restrictions, P
         }
 
         PCNode *pred = nullptr;
-        for (PCNode *curr : node->neighbors(next)) {
+        for (PCNode *curr: node->neighbors(next)) {
             if (curr == next) continue;
             OGDF_ASSERT(!subtreeLeaves[curr].empty());
             if (node->nodeType == PCNodeType::CNode && pred != nullptr) {
@@ -506,7 +541,7 @@ void PCTree::getRestrictions(std::vector<std::vector<PCNode *>> &restrictions, P
     }
     if (fixedLeaf != nullptr) {
         OGDF_ASSERT(central == nullptr);
-        central = fixedLeaf->getParent();
+        central = fixedLeaf == rootNode ? fixedLeaf->child1 : fixedLeaf->getParent();
         OGDF_ASSERT(readyChildren[central] == central->getDegree() - 1);
         OGDF_ASSERT(subtreeLeaves[central].size() == getLeafCount() - 1);
     } else {
@@ -518,7 +553,7 @@ void PCTree::getRestrictions(std::vector<std::vector<PCNode *>> &restrictions, P
 
 Bigint PCTree::PCTree::possibleOrders() const {
     Bigint orders(1);
-    for (PCNode *node : innerNodes()) {
+    for (PCNode *node: innerNodes()) {
         if (node->getNodeType() == PCNodeType::CNode) {
             orders *= 2;
         } else {
@@ -541,10 +576,9 @@ PCNode *PCTree::setRoot(PCNode *newRoot) {
 }
 
 PCNode *PCTree::changeRoot(PCNode *newRoot) {
-    // FIXME
     OGDF_HEAVY_ASSERT(checkValid());
     std::stack<PCNode *> path;
-    for (PCNode *node = newRoot; node != nullptr; node = newRoot->getParent()) {
+    for (PCNode *node = newRoot; node != nullptr; node = node->getParent()) {
         OGDF_ASSERT(node != nullptr);
         OGDF_ASSERT(node->tree == this);
         path.push(node);
@@ -554,13 +588,20 @@ PCNode *PCTree::changeRoot(PCNode *newRoot) {
         path.pop();
         PCNode *new_parent = path.top();
 
-        old_parent->child1->replaceSibling(nullptr, old_parent->child2);
-        old_parent->child2->replaceSibling(nullptr, old_parent->child1);
-        new_parent->sibling1->replaceSibling(new_parent, nullptr);
-        new_parent->sibling2->replaceSibling(new_parent, nullptr);
-        old_parent->child1 = new_parent->sibling1;
-        old_parent->child2 = new_parent->sibling2;
-        old_parent->setParent(new_parent);
+        if (!old_parent->isLeaf()) {
+            PCNode *sib1 = old_parent->getNextNeighbor(nullptr, new_parent);
+            PCNode *sib2 = old_parent->getNextNeighbor(sib1, new_parent);
+            new_parent->detach();
+            old_parent->child1->replaceSibling(nullptr, old_parent->child2);
+            old_parent->child2->replaceSibling(nullptr, old_parent->child1);
+            old_parent->child1 = sib1;
+            old_parent->child2 = sib2;
+            sib1->replaceSibling(sib2, nullptr);
+            sib2->replaceSibling(sib1, nullptr);
+        } else {
+            new_parent->detach();
+        }
+        new_parent->appendChild(old_parent);
     }
     OGDF_ASSERT(path.size() == 1);
     OGDF_ASSERT(path.top() == newRoot);

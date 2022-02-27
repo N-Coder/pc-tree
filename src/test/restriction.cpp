@@ -45,7 +45,7 @@ struct CentralNode {
 
 
 void testUIDRegen(PCTree &T) {
-    std::string uid = T.uniqueID();
+    std::string uid = T.uniqueID(uid_utils::leafToID);
 
     std::vector<std::vector<PCNode *>> restrictions;
     int rand = randomNumber(0, T.getLeafCount());
@@ -75,7 +75,7 @@ void testUIDRegen(PCTree &T) {
         AssertThat(res, Equals(true));
     }
 
-    AssertThat(cT.uniqueID(), Equals(uid));
+    AssertThat(cT.uniqueID(uid_utils::leafToID), Equals(uid));
 }
 
 struct CreateCentralNode {
@@ -125,6 +125,68 @@ struct CreateCentralNode {
         T.reset(); // catch exceptions from destructor
     }
 
+    static void declareTestIntersection(const CentralNode &central) {
+        it("intersects two trees correctly", [central]() {
+            CreateCentralNode create(central);
+            create.testIntersection();
+        });
+    }
+
+    void testIntersection() {
+        T = std::make_unique<PCTree>();
+        createTree();
+
+        PCTree t1(T->getLeafCount());
+        PCTreeNodeArray<PCNode *> leafMap1(*T);
+        PCTree t2(T->getLeafCount());
+        PCTreeNodeArray<PCNode *> leafMap2(*T);
+        PCTreeNodeArray<PCNode *> leafMap21(t2);
+
+        for (int i = 0; i < T->getLeafCount(); ++i) {
+            PCNode *original = T->getLeaves().at(i);
+            leafMap1[original] = t1.getLeaves().at(i);
+            leafMap2[original] = t2.getLeaves().at(i);
+            leafMap21[t2.getLeaves().at(i)] = t1.getLeaves().at(i);
+        }
+
+        std::vector<std::vector<PCNode *>> restrictions;
+        T->getRestrictions(restrictions);
+        auto rnd = std::random_device{};
+        auto rng = std::default_random_engine{rnd()};
+        std::shuffle(std::begin(restrictions), std::end(restrictions), rng);
+
+        for (int i = 0; i < restrictions.size(); ++i) {
+            if (i % 2 == 0) {
+                copyRestriction(restrictions.at(i), leafMap1, t1);
+            } else {
+                copyRestriction(restrictions.at(i), leafMap2, t2);
+            }
+        }
+        OGDF_ASSERT(t1.checkValid());
+        OGDF_ASSERT(t2.checkValid());
+
+        AssertThat(t1.intersect(t2, leafMap21), IsTrue());
+        AssertThat(t1.checkValid(), IsTrue());
+        std::string uidOriginal = T->uniqueID([&](std::ostream &os, PCNode *n, int pos) {
+            if (n->isLeaf()) os << leafMap1[n]->index();
+        });
+        std::string uidIntersection = t1.uniqueID(uid_utils::leafToID);
+
+        AssertThat(uidIntersection, Equals(uidOriginal));
+
+        T.reset();
+    }
+
+    static void copyRestriction(const std::vector<PCNode *> &originalRestriction,
+                                const PCTreeNodeArray<PCNode *> &leafMap, PCTree &tree) {
+        std::vector<PCNode *> copyRestriction;
+        copyRestriction.reserve(originalRestriction.size());
+        for (PCNode *n : originalRestriction) {
+            copyRestriction.push_back(leafMap[n]);
+        }
+        AssertThat(tree.makeConsecutive(copyRestriction), IsTrue());
+    }
+
     void dump(const std::string &name) {
         Graph G;
         GraphAttributes GA(G, GraphAttributes::all);
@@ -134,12 +196,12 @@ struct CreateCentralNode {
 
         CircularLayout cl;
         cl.call(GA);
-        //GraphIO::write(GA, name + "-cl.svg");
+//        GraphIO::write(GA, name + "-cl.svg");
 
         TreeLayout tl;
         G.reverseAllEdges();
         tl.call(GA);
-        //GraphIO::write(GA, name + "-tl.svg");
+//        GraphIO::write(GA, name + "-tl.svg");
     }
 
     void createTree() {
@@ -179,7 +241,7 @@ struct CreateCentralNode {
     static PCNode *moveUpRoot(PCNode *node) {
         while (randomNumber(0, 99) < 75 && node->getChildCount() > 0) {
             PCNode *child = node->getChild1();
-            if (child->getNodeType() == PCNodeType::Leaf) break;
+            //if (child->getNodeType() == PCNodeType::Leaf) break;
             child->detach();
             child->appendChild(node);
             node = child;
@@ -296,6 +358,7 @@ go_bandit([]() {
         for (CentralNode &central : centrals) {
             CreateCentralNode::declareTestConsecutive(central);
             CreateCentralNode::declareTestRegenerate(central);
+            CreateCentralNode::declareTestIntersection(central);
         }
     });
 });

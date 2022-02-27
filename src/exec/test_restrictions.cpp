@@ -3,6 +3,7 @@
 #include "utils.h"
 
 #include <iostream>
+#include <set>
 #include <getopt.h>
 #include <csignal>
 #include <limits>
@@ -23,10 +24,11 @@ int main(int argc, char **argv) {
     std::string name;
     std::unique_ptr<ConsecutiveOnesInterface> testTree;
     bool accumulate = false;
+    bool allRestrictions = false;
     int max_idx = std::numeric_limits<int>::max();
 
     int c;
-    while ((c = getopt(argc, argv, "m:t:n:a")) != -1) {
+    while ((c = getopt(argc, argv, "m:t:n:aA")) != -1) {
         switch (c) {
             case 'a':
                 accumulate = true;
@@ -39,6 +41,9 @@ int main(int argc, char **argv) {
                 break;
             case 'n':
                 name = optarg;
+                break;
+            case 'A':
+                allRestrictions = true;
                 break;
             default:
                 std::cerr << "Invalid arguments" << std::endl;
@@ -90,23 +95,22 @@ int main(int argc, char **argv) {
     long initTime = 0;
     long rowIdx = 0;
     std::vector<json> rowsResults;
-    std::vector<std::string> errors;
+    std::set<std::string> matrixErrors;
     if (sigsetjmp(env, 1) == 0) {
         testTree->initTree(matrix["cols"].get<int>());
         initTime = testTree->getTime();
         json &restrictions = matrix["restrictions"];
         for (auto it = restrictions.begin(); it != restrictions.end(); ++it) {
             bool last = std::next(it) == restrictions.end();
-            auto restriction = *it;
+            auto &restriction = *it;
             likwid_before_it();
 
-            json &lastRestriction = matrix["last_restriction"];
             bool possible;
             try {
-                possible = testTree->applyRestriction(restriction);
+                possible = testTree->applyRestriction(allRestrictions ? restriction["consecutive"] : restriction);
             } catch (const std::exception &e) {
                 possible = false;
-                errors.emplace_back(std::string("Exception: ") + e.what());
+                matrixErrors.insert(std::string("Exception: ") + e.what());
             }
             long restrictionTime = testTree->getTime();
             testTree->cleanUp();
@@ -115,33 +119,47 @@ int main(int argc, char **argv) {
             totalCleanupTime += cleanUpTime;
 
             if (!last && !possible) {
-                errors.emplace_back("possible");
+                matrixErrors.insert("possible");
                 break;
             }
 
-            if (last) {
-                lastRestriction["time"] = restrictionTime;
-                lastRestriction["cleanup_time"] = cleanUpTime;
-                lastRestriction["fingerprint"] = fingerprint(testTree->possibleOrders());
-                lastRestriction["possible"] = possible;
-                {
-                    std::stringstream sb;
-                    testTree->uniqueID(sb);
-                    lastRestriction["uid"] = sb.str();
+            if (last || allRestrictions) {
+                std::vector<std::string> errors;
+                auto &restrictionResults = allRestrictions ? restriction : matrix["last_restriction"];
+
+                restrictionResults["time"] = restrictionTime;
+                restrictionResults["cleanup_time"] = cleanUpTime;
+                try {
+                    restrictionResults["fingerprint"] = fingerprint(testTree->possibleOrders());
+                    restrictionResults["possible"] = possible;
+                    {
+                        std::stringstream sb;
+                        testTree->uniqueID(sb);
+                        restrictionResults["uid"] = sb.str();
+                    }
+                    restrictionResults["tree"] = testTree->toString();
+                } catch (const std::exception &e) {
+                    matrixErrors.insert(std::string("Exception: ") + e.what());
+                    break;
                 }
-                lastRestriction["tree"] = testTree->toString();
-                if (lastRestriction["tree"].get_ref<std::string&>().empty()) {
-                    lastRestriction.erase("tree");
+                if (restrictionResults["tree"].get_ref<std::string&>().empty()) {
+                    restrictionResults.erase("tree");
                 }
-                if (possible && lastRestriction["fingerprint"] != lastRestriction["exp_fingerprint"]) {
+                if (possible && restrictionResults["fingerprint"] != restrictionResults["exp_fingerprint"]) {
                     errors.emplace_back("fingerprint");
                 }
-                if (possible && !lastRestriction["uid"].get<std::string>().empty() && !lastRestriction["uid"].get<std::string>().empty() &&
-                    lastRestriction["uid"] != lastRestriction["exp_uid"]) {
+                if (possible && !restrictionResults["uid"].get<std::string>().empty() && !restrictionResults["uid"].get<std::string>().empty() &&
+                    restrictionResults["uid"] != restrictionResults["exp_uid"]) {
                     errors.emplace_back("uid");
                 }
-                if (possible != lastRestriction["exp_possible"]) {
+                if (possible != restrictionResults["exp_possible"]) {
                     errors.emplace_back("possible");
+                }
+                restrictionResults["errors"] = errors;
+                restrictionResults["valid"] = errors.empty();
+                matrixErrors.insert(errors.begin(), errors.end());
+                if (allRestrictions) {
+                    restrictionResults.erase("consecutive");
                 }
             }
             rowIdx++;
@@ -149,17 +167,19 @@ int main(int argc, char **argv) {
         }
     } else {
         matrix["signal"] = previousSig;
-        errors.emplace_back("signal");
+        matrixErrors.insert("signal");
         testTree.release(); // Avoid another signal when calling the destructor
     }
-    matrix["valid"] = errors.empty();
-    matrix["errors"] = std::move(errors);
+    matrix["valid"] = matrixErrors.empty();
+    matrix["errors"] = std::move(matrixErrors);
     matrix["init_time"] = initTime;
     matrix["total_restrict_time"] = totalRestrictTime;
     matrix["total_cleanup_time"] = totalCleanupTime;
     matrix["total_time"] = initTime + totalRestrictTime + totalCleanupTime;
     matrix["complete"] = (rowIdx == matrix["rows"].get<int>());
-    matrix.erase("restrictions");
+    if (!allRestrictions) {
+        matrix.erase("restrictions");
+    }
 
     likwid_finalize(matrix);
 

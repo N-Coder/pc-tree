@@ -95,12 +95,14 @@ namespace pc_tree {
 
         void setParent(PCNode *parent);
 
+        void forceDetach();
+
     public:
-        PCNode *getNextSibling(PCNode *pred) const;
+        PCNode *getNextSibling(const PCNode *pred) const;
 
-        PCNode *getOtherOuterChild(PCNode *child) const;
+        PCNode *getOtherOuterChild(const PCNode *child) const;
 
-        PCNode *getNextNeighbor(PCNode *pred, PCNode *curr) const;
+        PCNode *getNextNeighbor(const PCNode *pred, const PCNode *curr) const;
 
         void proceedToNextNeighbor(PCNode *&pred, PCNode *&curr) const;
 
@@ -113,51 +115,40 @@ namespace pc_tree {
     public:
         bool isDetached() const {
             if (parentCNodeId == -1 && parentPNode == nullptr) {
-                OGDF_ASSERT(sibling1 == nullptr && sibling2 == nullptr);
                 return true;
             } else {
+                OGDF_ASSERT(parentCNodeId == -1 || parentPNode == nullptr);
                 return false;
             }
         }
 
-        bool isValidNode() const;
+        bool isValidNode(const PCTree *ofTree = nullptr) const;
 
         bool isLeaf() const {
-            OGDF_ASSERT(isValidNode());
-            if (nodeType == PCNodeType::Leaf) {
-                OGDF_ASSERT(childCount == 0);
-                OGDF_ASSERT(child1 == nullptr);
-                OGDF_ASSERT(child2 == nullptr);
-                return true;
-            } else {
-                OGDF_ASSERT(childCount > 0);
-                OGDF_ASSERT(child1 != nullptr);
-                OGDF_ASSERT(child2 != nullptr);
-                return false;
-            }
+            return nodeType == PCNodeType::Leaf;
         }
 
-        bool isParentOf(PCNode *other) const {
+        bool isParentOf(const PCNode *other) const {
             OGDF_ASSERT(other != nullptr);
             OGDF_ASSERT(tree == other->tree);
             return other->getParent() == this;
         }
 
-        bool isSiblingOf(PCNode *other) const {
+        bool isSiblingOf(const PCNode *other) const {
             OGDF_ASSERT(other != nullptr);
             OGDF_ASSERT(tree == other->tree);
             return this->getParent() == other->getParent();
         }
 
-        bool isSiblingAdjacent(PCNode *sibling) const {
+        bool isSiblingAdjacent(const PCNode *sibling) const {
             OGDF_ASSERT(isSiblingOf(sibling));
             OGDF_ASSERT(this != sibling);
             return sibling1 == sibling || sibling2 == sibling;
         }
 
-        bool areNeighborsAdjacent(PCNode *neigh1, PCNode *neigh2) const;
+        bool areNeighborsAdjacent(const PCNode *neigh1, const PCNode *neigh2) const;
 
-        bool isChildOuter(PCNode *child) const {
+        bool isChildOuter(const PCNode *child) const {
             OGDF_ASSERT(isParentOf(child));
             return child1 == child || child2 == child;
         }
@@ -221,7 +212,7 @@ namespace pc_tree {
 
         PCNode *getSibling1() const { return sibling1; }
 
-        PCNode *getSiling2() const { return sibling2; }
+        PCNode *getSibling2() const { return sibling2; }
 
     OGDF_NEW_DELETE
     };

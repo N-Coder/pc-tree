@@ -45,4 +45,11 @@ public:
     Bigint possibleOrders() override {
         return T->getPossibleOrders();
     }
+
+
+    std::ostream &uniqueID(std::ostream &os) override {
+        os << T->uniqueID();
+        return os;
+    };
+
 };

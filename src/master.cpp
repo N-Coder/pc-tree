@@ -2,4 +2,5 @@
 #include "PCTree_basic.cpp"
 #include "PCTree_construction.cpp"
 #include "PCTree_restriction.cpp"
+#include "PCTree_intersect.cpp"
 #include "NodePCRotation.cpp"

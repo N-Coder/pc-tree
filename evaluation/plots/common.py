@@ -62,6 +62,38 @@ def melt(df, id_vars=None, value_vars=None, var_name=None, value_name="value",
     return df
 
 
+def make_speedupplot(data, x, ylim, range, filename, loc="upper right"):
+    fig, ax = plt.subplots()
+
+    ys = ["speedup.%s" % impl for impl in IMPLS_COMPARE]
+    data = data.dropna(subset=[x, *ys])
+    x_buckets = pd.cut(data[x], range)
+    groups = data.groupby(x_buckets)
+
+    # for impl in IMPLS_COMPARE:
+    #     sns.scatterplot(x=x, y="speedup.%s" % impl, label=impl, data=data, ax=ax, s=25, alpha=0.2,
+    #                     color=COLORS[impl], marker=MARKERS[impl])
+
+    for impl in IMPLS_COMPARE:
+        y = "speedup.%s" % impl
+        lower = groups[y].quantile(0.25).reset_index()
+        upper = groups[y].quantile(0.75).reset_index()
+        ax.fill_between(lower[x].apply(lambda x: x.mid), lower[y], upper[y], color=COLORS[impl], alpha=0.3)
+
+    for impl in IMPLS_COMPARE:
+        y = "speedup.%s" % impl
+        line = groups[y].median().reset_index()
+        ax.plot(line[x].apply(lambda x: x.mid), line[y], color="white", linewidth=2)
+        ax.plot(line[x].apply(lambda x: x.mid), line[y], color=COLORS[impl], linewidth=1, label=impl)
+
+    ax.set_ylabel("Speedup over OGDF")
+    ax.set_xlabel(NAMES[x])
+    ax.set_ylim(*ylim)
+    ax.legend(loc=loc)
+    fig.savefig(filename)
+    return fig
+
+
 mpl.rc("figure", figsize=(6.4, 4.8), dpi=90 if INTERACTIVE else 300, autolayout=True)
 
 
@@ -69,8 +101,11 @@ IMPLS_ASC_FASTEST = ["UFPC", "HsuPC", "CppZanetti", "Zanetti", "OGDF"]
 IMPLS_DESC_FASTEST = list(reversed(IMPLS_ASC_FASTEST))
 IMPLS_ASC = IMPLS_ASC_FASTEST + ["GraphSet", "Gregable", "BiVoc", "Reisle", "JGraphEd", "SageMath"]
 IMPLS_DESC = list(reversed(IMPLS_ASC))
+IMPLS_COMPARE = ["UFPC/OGDF", "HsuPC/OGDF", "Zanetti/OGDF", "CppZanetti/OGDF"]
 COLOR_PALETTE = sns.color_palette("bright", n_colors=len(IMPLS_ASC) + 1)
 COLORS = dict(zip(IMPLS_ASC, COLOR_PALETTE))
+COLORS["SageMath"] = (0.2, 0.2, 0.2)
+COLORS = {**COLORS, **{f"%s/OGDF" % impl: COLORS[impl] for impl in IMPLS_ASC}}
 MARKERS_ALL = ['H', 'D', 'X', 'o', 'P', 'v', '<', '>', '^', 'p', 'h']
 MARKERS = dict(zip(IMPLS_ASC, MARKERS_ALL))
 NAMES = {

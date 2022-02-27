@@ -33,14 +33,17 @@ def fingerprint(tree, root=True):
     return orders
 
 
-def processMatrix(matrix):
+def processMatrix(matrix, all_restrictions):
     mapping = [[i] for i in range(matrix["cols"])]
     index = 0
     for restriction in matrix["restrictions"]:
-        for col in restriction:
+        consecutive = restriction if not all_restrictions else restriction["consecutive"]
+        for col in consecutive:
             mapping[col].append(-index - 1)
         index += 1
-    del matrix["restrictions"]
+
+    if not all_restrictions:
+        del matrix["restrictions"]
 
     mapping = [frozenset(s) for s in mapping]
     start = time.perf_counter()
@@ -50,7 +53,7 @@ def processMatrix(matrix):
     matrix["id"] = "{}/{}".format(algname, matrix["id"])
     matrix["total_restrict_time"] = 0
     matrix["init_time"] = matrix["total_time"] = (time.perf_counter() - start) * 1000_000_000
-    errors = []
+    matrix_errors = set()
     # matrix["sage_tree"] = str(tree)
     last_idx = 0
     for idx in range(0, matrix["rows"]):
@@ -70,41 +73,51 @@ def processMatrix(matrix):
         rtime = (time.perf_counter() - start) * 1000_000_000
         if not last and not possible:
             matrix["valid"] = False
-            errors.append("possible")
+            matrix_errors.add("possible")
             break
 
-        if last:
-            last_res = matrix["last_restriction"]
-            last_res["time"] = rtime
-            last_res["possible"] = possible
+        if last or all_restrictions:
+            restriction_results = matrix["restrictions"][idx] if all_restrictions else matrix["last_restriction"]
+            
+            errors = []
+            restriction_results["time"] = rtime
+            restriction_results["possible"] = possible
             fp = str(fingerprint(tree))
-            last_res["fingerprint"] = fp[:5] + str(len(fp))
+            restriction_results["fingerprint"] = fp[:5] + str(len(fp))
 
-            if possible and last_res["fingerprint"] != last_res["exp_fingerprint"]:
+            if possible and restriction_results["fingerprint"] != restriction_results["exp_fingerprint"]:
                 errors.append("fingerprint")
-            if possible is not last_res["exp_possible"]:
+            if possible is not restriction_results["exp_possible"]:
                 errors.append("possible")
+            restriction_results["errors"] = errors
+            restriction_results["valid"] = not errors
+            if all_restrictions:
+                del restriction_results["consecutive"]
+            matrix_errors.update(errors)
+
 
         matrix["total_time"] += rtime
         matrix["total_restrict_time"] += rtime
 
-    matrix["valid"] = not errors
-    matrix["errors"] = errors
+    matrix["valid"] = not matrix_errors
+    matrix["errors"] = list(matrix_errors)
     matrix["complete"] = last_idx == matrix["rows"] - 1
 
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-n", type=str, default="SageMath2")
 parser.add_argument("-r", type=int, default=1)
+parser.add_argument("-A", default=False, action='store_true')
 parser.add_argument("f", type=str)
 args = parser.parse_args()
 repetitions = args.r
 filename = args.f
+all_restrictions = args.A
 algname = args.n
 
 for i in range(repetitions):
     with open(filename, "r") as f:
             matrix = json.load(f)
-            processMatrix(matrix)
+            processMatrix(matrix, all_restrictions)
             if i is repetitions - 1:
                 print(json.dumps(matrix))
