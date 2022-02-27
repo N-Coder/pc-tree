@@ -700,6 +700,7 @@ void PCTree::splitPNode(PCNode *node) {
             PCArc *newArc = preparePNode(fullPNode, (fullParentArc && node == apexCandidate),
                                        fullNeighbors.size() + 1);
             addToCentralCNode(newArc, newArc, true);
+            if (fullParentArc) fullPNode->parentArc = node->parentArc;
             fullPNode->resetLists();
         }
     }
