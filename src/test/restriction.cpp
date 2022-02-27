@@ -134,12 +134,12 @@ struct CreateCentralNode {
 
         CircularLayout cl;
         cl.call(GA);
-        GraphIO::write(GA, name + "-cl.svg");
+        //GraphIO::write(GA, name + "-cl.svg");
 
         TreeLayout tl;
         G.reverseAllEdges();
         tl.call(GA);
-        GraphIO::write(GA, name + "-tl.svg");
+        //GraphIO::write(GA, name + "-tl.svg");
     }
 
     void createTree() {

@@ -88,9 +88,8 @@ HEATMAP.set_over("white")
 HEATMAP.set_bad("white")
 
 db = pymongo.MongoClient(
-    "dbms.host.com", tls=True,
-    authSource="my_db", username="my_name", password="my_password"
-).my_db
+    "pc-tree-mongo", connectTimeoutMS=2000 
+).pc_tree
 
 os.makedirs("out", exist_ok=True)
 os.chdir("out")

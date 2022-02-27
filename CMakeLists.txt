@@ -86,7 +86,7 @@ function(make_pc_target TARGET)
     target_include_directories(${TARGET} PUBLIC "include")
     target_include_directories(${TARGET} PRIVATE "libraries" "libraries/bandit")
     target_link_libraries(${TARGET} OGDF bigInt)
-    target_compile_options(${TARGET} PRIVATE "-Werror=uninitialized" "-Wall")
+    target_compile_options(${TARGET} PRIVATE "-w") # "-Werror=uninitialized" "-Wall"
 endfunction()
 
 
@@ -104,6 +104,9 @@ target_link_libraries(make_restrictions_planarity ${COMPARE_LIBRARIES} stdc++fs)
 
 add_executable(make_restrictions_tree ${SOURCE_FILES} src/exec/make_restrictions_tree.cpp)
 make_pc_target(make_restrictions_tree)
+
+add_executable(make_graphs ${SOURCE_FILES} src/exec/make_graphs.cpp)
+make_pc_target(make_graphs)
 
 add_executable(test_planarity ${SOURCE_FILES} src/exec/test_planarity.cpp)
 make_pc_target(test_planarity)

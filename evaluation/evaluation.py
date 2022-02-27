@@ -24,25 +24,23 @@ JAVA_EVAL_RESTRS_PATH = JAVA_DIR.joinpath("build/libs/testRestrictions.jar")
 JAVA_EVAL_PLAN_PATH = JAVA_DIR.joinpath("build/libs/testPlanarity.jar")
 SAGEMATH_PATH = EVALUATION_DIR.joinpath("sagemath/main.py")
 
-db = None # TODO add mongoDB database
-# pymongo.MongoClient(
-#     "dbms.host.com", tls=True,
-#     authSource="my_db", username="my_name", password="my_password"
-# ).my_db
+db = pymongo.MongoClient(
+    "pc-tree-mongo", connectTimeoutMS=2000 
+).pc_tree # adapt to your needs
 
 
 def bake_srun(**kwargs):
     return sh.srun.bake(
-        constraint="chimaira", # adapt to your needs
-        mem="10G",
+        #constraint="chimaira", # adapt to your needs
+        #mem="10G",
         **kwargs
     )
 
 
 def bake_sbatch(**kwargs):
     return sh.sbatch.bake(
-        constraint="chimaira",
-        mem="10G",
+        #constraint="chimaira",
+        #mem="10G",
         exclusive="user",
         **kwargs
     )
@@ -321,7 +319,7 @@ def test_planarity(ttypes, infile, outfile, size, checkpoint, repetitions):
 
 
 @cli.command()
-@click.option("--type", "-t", "ttypes", multiple=True, default=["UFPC", "HsuPC", "OGDF", "Zanetti"])
+@click.option("--type", "-t", "ttypes", multiple=True, default=["UFPC", "HsuPC", "OGDF", "CppZanetti", "Zanetti"])
 @click.argument("infiles", required=True, nargs=-1)
 @click.option("--size", "-s", help="minRestrictionSize", type=int, default=25)
 @click.option("--checkpoint", "-c", help="checkpointInterval", type=int, default=1000)
