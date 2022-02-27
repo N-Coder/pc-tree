@@ -1,231 +1,20 @@
-From 4670eb9dd52e378ff1c4233dd8d08498b417baff Mon Sep 17 00:00:00 2001
+From 022d48a6181e68645cec24f2b6f722acd67482d0 Mon Sep 17 00:00:00 2001
 From: Simon Dominik Niko Fink <simon.fink@uni-passau.de>
-Date: Thu, 6 May 2021 12:53:54 +0200
-Subject: [PATCH 1/3] apply manual changes to java libs
+Date: Sun, 27 Feb 2022 12:19:12 +0100
+Subject: [PATCH 3/8] manual changes to jppzanetti
 
 ---
- .../java_evaluation/graphtea/PQHelpers.java   |   8 +-
- .../java/java_evaluation/graphtea/PQNode.java |   2 +-
- .../java/java_evaluation/graphtea/PQTree.java |   7 +-
- .../java/java_evaluation/graphtea/QNode.java  |   7 +-
- .../java/java_evaluation/jgraphed/PQNode.java |  28 +-
- .../java/java_evaluation/jgraphed/PQTree.java |  17 +-
- .../java/java_evaluation/jgraphed/Queue.java  |   2 +-
- .../java/java_evaluation/jppzanetti/Leaf.java |   7 +
+ .../java/java_evaluation/jppzanetti/Leaf.java |   9 +-
  .../java/java_evaluation/jppzanetti/Node.java |  10 +-
- .../java_evaluation/jppzanetti/PQRNode.java   | 121 ++++++-
- .../java_evaluation/jppzanetti/PQRTree.java   | 332 ++++++++++++++++--
- 11 files changed, 490 insertions(+), 51 deletions(-)
+ .../java_evaluation/jppzanetti/PQRNode.java   | 124 ++++++-
+ .../java_evaluation/jppzanetti/PQRTree.java   | 331 ++++++++++++++++--
+ 4 files changed, 439 insertions(+), 35 deletions(-)
 
-diff --git a/evaluation/javaEvaluation/src/main/java/java_evaluation/graphtea/PQHelpers.java b/evaluation/javaEvaluation/src/main/java/java_evaluation/graphtea/PQHelpers.java
-index 357a685..9a979d6 100644
---- a/evaluation/javaEvaluation/src/main/java/java_evaluation/graphtea/PQHelpers.java
-+++ b/evaluation/javaEvaluation/src/main/java/java_evaluation/graphtea/PQHelpers.java
-@@ -1,12 +1,12 @@
- package java_evaluation.graphtea;
- 
--import java_evaluation.graphtea.PNode;
--import java_evaluation.graphtea.PQNode;
--import java_evaluation.graphtea.QNode;
- import java.util.ArrayList;
- import java.util.Arrays;
- import java.util.HashSet;
- import java.util.List;
-+import java_evaluation.graphtea.PNode;
-+import java_evaluation.graphtea.PQNode;
-+import java_evaluation.graphtea.QNode;
- 
- /**
-  * This class holds various functions that are applied in the PQTree data-structure
-@@ -300,7 +300,7 @@ public class PQHelpers {
-             leftMostChildOfQ.setCircularLink_prev(rightmostChildOfParent);
-             rightmostChildOfParent.setCircularLink_next(leftMostChildOfQ);
-         }
--        parentQNode.removeChildren(Arrays.asList(partialNode));
-+        parentQNode.removeChildren(Arrays.asList(partialNode), numLeaves);
-         parentQNode.setParentQNodeChildren();
-     }
- 
-diff --git a/evaluation/javaEvaluation/src/main/java/java_evaluation/graphtea/PQNode.java b/evaluation/javaEvaluation/src/main/java/java_evaluation/graphtea/PQNode.java
-index 2a743b6..7a0d7cc 100644
---- a/evaluation/javaEvaluation/src/main/java/java_evaluation/graphtea/PQNode.java
-+++ b/evaluation/javaEvaluation/src/main/java/java_evaluation/graphtea/PQNode.java
-@@ -1,7 +1,7 @@
- package java_evaluation.graphtea;
- 
--import java_evaluation.graphtea.IllegalNodeTypeException;
- import java.util.*;
-+import java_evaluation.graphtea.IllegalNodeTypeException;
- import sun.reflect.generics.reflectiveObjects.NotImplementedException;
- 
- /**
-diff --git a/evaluation/javaEvaluation/src/main/java/java_evaluation/graphtea/PQTree.java b/evaluation/javaEvaluation/src/main/java/java_evaluation/graphtea/PQTree.java
-index b0a84ee..9498d5f 100644
---- a/evaluation/javaEvaluation/src/main/java/java_evaluation/graphtea/PQTree.java
-+++ b/evaluation/javaEvaluation/src/main/java/java_evaluation/graphtea/PQTree.java
-@@ -2,11 +2,11 @@ package java_evaluation.graphtea;
- 
- import static java_evaluation.graphtea.PQHelpers.*;
- 
--import java_evaluation.graphtea.PQHelpers;
-+import java.util.*;
- import java_evaluation.graphtea.PNode;
-+import java_evaluation.graphtea.PQHelpers;
- import java_evaluation.graphtea.PQNode;
- import java_evaluation.graphtea.QNode;
--import java.util.*;
- 
- /**
-  * This class contains subroutines used to construct a PQ-Tree as described
-@@ -20,6 +20,7 @@ import java.util.*;
-  */
- 
- public class PQTree {
-+    protected int numLeaves;
- 
-     /**
-      * This subroutine determines which nodes of the PQ-Tree should be pruned
-@@ -998,7 +999,7 @@ public class PQTree {
-             }
-         }
- 
--        PQHelpers.reduceChildQNodeIntoParentQNode(partialNode, (QNode) x);
-+        PQHelpers.reduceChildQNodeIntoParentQNode(partialNode, (QNode) x, numLeaves);
- 
-         x.setParentQNodeChildren();
- 
-diff --git a/evaluation/javaEvaluation/src/main/java/java_evaluation/graphtea/QNode.java b/evaluation/javaEvaluation/src/main/java/java_evaluation/graphtea/QNode.java
-index 2ec3a06..a8425ab 100644
---- a/evaluation/javaEvaluation/src/main/java/java_evaluation/graphtea/QNode.java
-+++ b/evaluation/javaEvaluation/src/main/java/java_evaluation/graphtea/QNode.java
-@@ -1,9 +1,9 @@
- package java_evaluation.graphtea;
- 
--import java_evaluation.graphtea.PQHelpers;
- import java.util.ArrayList;
- import java.util.Arrays;
- import java.util.List;
-+import java_evaluation.graphtea.PQHelpers;
- 
- /**
-  * This class holds the required functions and variables for a Q-Node which are used
-@@ -115,7 +115,7 @@ public class QNode extends PQNode {
-         return list;
-     }
- 
--    public void removeChildren(List<PQNode> removalNodes) {
-+    public void removeChildren(List<PQNode> removalNodes, int numLeaves) {
- 
-         if (this.endmostChildren().size() == 0) return;
- 
-@@ -140,6 +140,9 @@ public class QNode extends PQNode {
- 
-             } else {
-                 survivors.add(traversal);
-+                if (survivors.size() > 2 * numLeaves + 1) {
-+                    throw new IllegalStateException("Problem in removeChildren()");
-+                }
-             }
-             traversal = traversal.getCircularLink_next();
-         } while (traversal != start);
-diff --git a/evaluation/javaEvaluation/src/main/java/java_evaluation/jgraphed/PQNode.java b/evaluation/javaEvaluation/src/main/java/java_evaluation/jgraphed/PQNode.java
-index bc3ebf1..dc560fd 100644
---- a/evaluation/javaEvaluation/src/main/java/java_evaluation/jgraphed/PQNode.java
-+++ b/evaluation/javaEvaluation/src/main/java/java_evaluation/jgraphed/PQNode.java
-@@ -1,6 +1,7 @@
- package java_evaluation.jgraphed;
- 
--import java.awt.*;
-+import java.awt.Color;
-+import java.math.BigInteger;
- import java.util.Vector;
- 
- // The secondary model component of the model/view/controller for this application
-@@ -1696,4 +1697,29 @@ public class PQNode {
-         }
-         return subNodeCount;
-     }
-+
-+    public BigInteger getPossibleOrders(boolean root) throws Exception {
-+        BigInteger orders = BigInteger.ONE;
-+
-+        switch (type) {
-+            case TYPE_PNODE:
-+                int num = root ? childCount - 1 : childCount;
-+                for (int i = 2; i <= num; i++) {
-+                    orders = orders.multiply(BigInteger.valueOf(i));
-+                }
-+                break;
-+            case TYPE_QNODE:
-+                orders = orders.multiply(BigInteger.valueOf(2));
-+                break;
-+            default:
-+                throw new IllegalStateException("invalid node type in getPossibleOrders()");
-+        }
-+
-+        Vector<PQNode> children = getAllChildren();
-+        for (int i = 0; i < children.size(); i++) {
-+            orders = orders.multiply(children.elementAt(i).getPossibleOrders(false));
-+        }
-+
-+        return orders;
-+    }
- }
-diff --git a/evaluation/javaEvaluation/src/main/java/java_evaluation/jgraphed/PQTree.java b/evaluation/javaEvaluation/src/main/java/java_evaluation/jgraphed/PQTree.java
-index 727dcbc..9083d3f 100644
---- a/evaluation/javaEvaluation/src/main/java/java_evaluation/jgraphed/PQTree.java
-+++ b/evaluation/javaEvaluation/src/main/java/java_evaluation/jgraphed/PQTree.java
-@@ -1,6 +1,6 @@
- package java_evaluation.jgraphed;
- 
--import dataStructure.Queue;
-+import java.math.BigInteger;
- import java.util.Iterator;
- import java.util.Vector;
- 
-@@ -202,9 +202,10 @@ public class PQTree {
-     // returns the root of the pertinent subtree...
-     public PQNode reduction(int numSteps) throws Exception {
-         PQNode pertRoot = null;
--        if (!cleared) {
--            clear();
--        }
-+        //    if ( !cleared )
-+        //    {
-+        //      clear();
-+        //    }
-         long timeTaken = System.currentTimeMillis();
-         boolean previouslyDoneReduction = doneReduction;
-         if (queue == null) {
-@@ -898,4 +899,12 @@ public class PQTree {
-     public int getNumDeletedNodes() throws Exception {
-         return root.countSubDeletedNodes();
-     }
-+
-+    public BigInteger getPossibleOrders() {
-+        try {
-+            return root.getPossibleOrders(true);
-+        } catch (Exception e) {
-+            throw new IllegalStateException("Error during getPossibleOrders: " + e.toString());
-+        }
-+    }
- }
-\ No newline at end of file
-diff --git a/evaluation/javaEvaluation/src/main/java/java_evaluation/jgraphed/Queue.java b/evaluation/javaEvaluation/src/main/java/java_evaluation/jgraphed/Queue.java
-index f7fa4e8..a1ef452 100644
---- a/evaluation/javaEvaluation/src/main/java/java_evaluation/jgraphed/Queue.java
-+++ b/evaluation/javaEvaluation/src/main/java/java_evaluation/jgraphed/Queue.java
-@@ -1,4 +1,4 @@
--package dataStructure;
-+package java_evaluation.jgraphed;
- 
- // This class represents a Queue data structure used for storing nodes
- // that are used during the reduction process of the PQTree.
 diff --git a/evaluation/javaEvaluation/src/main/java/java_evaluation/jppzanetti/Leaf.java b/evaluation/javaEvaluation/src/main/java/java_evaluation/jppzanetti/Leaf.java
-index 60331f9..436a5bb 100644
+index 60331f9..ae3324f 100644
 --- a/evaluation/javaEvaluation/src/main/java/java_evaluation/jppzanetti/Leaf.java
 +++ b/evaluation/javaEvaluation/src/main/java/java_evaluation/jppzanetti/Leaf.java
-@@ -1,5 +1,7 @@
+@@ -1,11 +1,13 @@
  package java_evaluation.jppzanetti;
  
 +import java.math.BigInteger;
@@ -233,6 +22,13 @@ index 60331f9..436a5bb 100644
  class Leaf extends Node {
  
      /**
+      * A number that servers as the label of the leaf.
+      */
+-    private final int value;
++    final int value;
+ 
+     /**
+      * Initializes a new leaf.
 @@ -31,4 +33,9 @@ class Leaf extends Node {
      boolean areAllChildrenBlack() {
          return true;
@@ -285,7 +81,7 @@ index 6f1ff4f..a874a8e 100644
 +    public abstract BigInteger getPossibleOrders(boolean root);
  }
 diff --git a/evaluation/javaEvaluation/src/main/java/java_evaluation/jppzanetti/PQRNode.java b/evaluation/javaEvaluation/src/main/java/java_evaluation/jppzanetti/PQRNode.java
-index 9bbcb35..fc9d63c 100644
+index 9bbcb35..e94f337 100644
 --- a/evaluation/javaEvaluation/src/main/java/java_evaluation/jppzanetti/PQRNode.java
 +++ b/evaluation/javaEvaluation/src/main/java/java_evaluation/jppzanetti/PQRNode.java
 @@ -1,22 +1,24 @@
@@ -356,11 +152,10 @@ index 9bbcb35..fc9d63c 100644
      }
  
      void mergePNode() {
-@@ -583,23 +587,23 @@ class PQRNode extends Node {
-      * Operations to adjust the LCA       *
+@@ -584,22 +588,23 @@ class PQRNode extends Node {
       * after repairing all gray children. *
       **************************************
--     */
+      */
 -    void adjust() {
 +    boolean adjust() {
          switch (this.type) {
@@ -384,7 +179,7 @@ index 9bbcb35..fc9d63c 100644
          int whiteCount = 0;
          for (Node b : this.blackChildren) {
              if ((b.sibling[0] == null) || (b.sibling[0].getColor() == Color.WHITE)) {
-@@ -612,6 +616,9 @@ class PQRNode extends Node {
+@@ -612,6 +617,9 @@ class PQRNode extends Node {
  
          if (whiteCount > 2) {
              this.type = PQRType.R;
@@ -394,7 +189,7 @@ index 9bbcb35..fc9d63c 100644
          }
      }
  
-@@ -699,4 +706,96 @@ class PQRNode extends Node {
+@@ -699,4 +707,100 @@ class PQRNode extends Node {
      boolean areAllChildrenBlack() {
          return (this.blackChildren.size() == this.getChildCount());
      }
@@ -488,11 +283,15 @@ index 9bbcb35..fc9d63c 100644
 +
 +    @Override
 +    public Iterator<Node> iterator() {
++        if (firstChild.sibling[0] != null && firstChild.sibling[1] != null ||
++            lastChild.sibling[0] != null && lastChild.sibling[1] != null) {
++            throw new AssertionError("Tree has invalid state. Aborting.");
++        }
 +        return new ChildIterator(firstChild);
 +    }
  }
 diff --git a/evaluation/javaEvaluation/src/main/java/java_evaluation/jppzanetti/PQRTree.java b/evaluation/javaEvaluation/src/main/java/java_evaluation/jppzanetti/PQRTree.java
-index 9cfcb34..1c2c389 100644
+index 9cfcb34..1a862af 100644
 --- a/evaluation/javaEvaluation/src/main/java/java_evaluation/jppzanetti/PQRTree.java
 +++ b/evaluation/javaEvaluation/src/main/java/java_evaluation/jppzanetti/PQRTree.java
 @@ -1,6 +1,7 @@
@@ -616,7 +415,7 @@ index 9cfcb34..1c2c389 100644
              if ((p != null) && (p.isVisited())) {
                  p.cleanUp();
                  this.visitedNodes.add(p);
-@@ -228,4 +230,292 @@ public class PQRTree {
+@@ -228,4 +230,291 @@ public class PQRTree {
      public String toString() {
          return root.toString();
      }
@@ -641,8 +440,8 @@ index 9cfcb34..1c2c389 100644
 +        } else {
 +            List<Node> neighbors = new LinkedList<>();
 +            n.iterator().forEachRemaining(neighbors::add);
-+            if (node != root)
-+                neighbors.add(node.getParent());
++            if (n != root)
++                neighbors.add(n.getParent());
 +            assert neighbors.size() == 2;
 +
 +            if (neighbors.get(0) == node) {
@@ -708,7 +507,6 @@ index 9cfcb34..1c2c389 100644
 +        stack.add(fullNodeOrder.get(fullNodeOrder.size() - 1));
 +        while (!stack.isEmpty()) {
 +            Object next = stack.remove(stack.size() - 1);
-+
 +            if (next instanceof String) {
 +                sb.append(next);
 +                continue;
@@ -775,7 +573,7 @@ index 9cfcb34..1c2c389 100644
 +                children.sort(Comparator.comparingInt(order::get));
 +            }
 +
-+            assert (node == fullNodeOrder.get(fullNodeOrder.size() - 1)) == (lastLeaf.getParent() == node);
++            //			assert (node == fullNodeOrder.get(fullNodeOrder.size() - 1)) == (lastLeaf.getParent() == node);
 +            assert (order.get(children.get(0)) < order.get(children.get(children.size() - 1)));
 +
 +            boolean space = false;
@@ -910,5 +708,5 @@ index 9cfcb34..1c2c389 100644
 +    }
  }
 -- 
-2.30.2
+2.35.1
 

@@ -71,3 +71,5 @@ sed -i "0,/^/s//#pragma once\n\n/" *.h
 clang-format -style=file -i *.h
 
 clang -x c++ -Xclang -fixit -Xclang -fix-what-you-can -ferror-limit=0 *.h &>cppzanetti-clang-warnings.log || true
+
+clang-format -style=file -i *.h

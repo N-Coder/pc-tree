@@ -1,0 +1,221 @@
+From 4534112da49b09392ffad4c305cd6f9ead2dbad0 Mon Sep 17 00:00:00 2001
+From: Simon Dominik Niko Fink <simon.fink@uni-passau.de>
+Date: Sun, 27 Feb 2022 10:53:14 +0100
+Subject: [PATCH 1/8] manual changes to graphtea
+
+---
+ .../java_evaluation/graphtea/PQHelpers.java   |  4 +-
+ .../java/java_evaluation/graphtea/PQNode.java | 51 +++++++++----------
+ .../java/java_evaluation/graphtea/PQTree.java |  3 +-
+ .../java/java_evaluation/graphtea/QNode.java  |  5 +-
+ 4 files changed, 33 insertions(+), 30 deletions(-)
+
+diff --git a/evaluation/javaEvaluation/src/main/java/java_evaluation/graphtea/PQHelpers.java b/evaluation/javaEvaluation/src/main/java/java_evaluation/graphtea/PQHelpers.java
+index 357a685..ab9e7e9 100644
+--- a/evaluation/javaEvaluation/src/main/java/java_evaluation/graphtea/PQHelpers.java
++++ b/evaluation/javaEvaluation/src/main/java/java_evaluation/graphtea/PQHelpers.java
+@@ -273,7 +273,7 @@ public class PQHelpers {
+         rightNode.setCircularLink_prev(insertionNode);
+     }
+ 
+-    public static void reduceChildQNodeIntoParentQNode(QNode partialNode, QNode parentQNode) {
++    public static void reduceChildQNodeIntoParentQNode(QNode partialNode, QNode parentQNode, int numLeaves) {
+         PQNode leftmostChildOfParent = parentQNode.endmostChildren().get(0);
+         PQNode rightmostChildOfParent = parentQNode.endmostChildren().get(1);
+ 
+@@ -300,7 +300,7 @@ public class PQHelpers {
+             leftMostChildOfQ.setCircularLink_prev(rightmostChildOfParent);
+             rightmostChildOfParent.setCircularLink_next(leftMostChildOfQ);
+         }
+-        parentQNode.removeChildren(Arrays.asList(partialNode));
++        parentQNode.removeChildren(Arrays.asList(partialNode), numLeaves);
+         parentQNode.setParentQNodeChildren();
+     }
+ 
+diff --git a/evaluation/javaEvaluation/src/main/java/java_evaluation/graphtea/PQNode.java b/evaluation/javaEvaluation/src/main/java/java_evaluation/graphtea/PQNode.java
+index 2a743b6..c603f22 100644
+--- a/evaluation/javaEvaluation/src/main/java/java_evaluation/graphtea/PQNode.java
++++ b/evaluation/javaEvaluation/src/main/java/java_evaluation/graphtea/PQNode.java
+@@ -1,8 +1,7 @@
+ package java_evaluation.graphtea;
+ 
+-import java_evaluation.graphtea.IllegalNodeTypeException;
+ import java.util.*;
+-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
++import java_evaluation.graphtea.IllegalNodeTypeException;
+ 
+ /**
+  * This class holds the required functions and variables for a PQNode which are used
+@@ -272,8 +271,8 @@ public class PQNode {
+ 
+     public List<PQNode> getChildrenOfType(Class type) {
+         try {
+-            throw new NotImplementedException();
+-        } catch (NotImplementedException e) {
++            throw new IllegalStateException();
++        } catch (IllegalStateException e) {
+             System.err.println("getChildrenOfType(): " + e);
+             return null;
+         }
+@@ -281,8 +280,8 @@ public class PQNode {
+ 
+     public List<PQNode> getChildrenOfLabel(String label) {
+         try {
+-            throw new NotImplementedException();
+-        } catch (NotImplementedException e) {
++            throw new IllegalStateException();
++        } catch (IllegalStateException e) {
+             System.err.println("getChildrenOfLabel(): " + e);
+             return null;
+         }
+@@ -316,8 +315,8 @@ public class PQNode {
+ 
+     public List<PQNode> fullChildren() {
+         try {
+-            throw new NotImplementedException();
+-        } catch (NotImplementedException e) {
++            throw new IllegalStateException();
++        } catch (IllegalStateException e) {
+             System.err.println("fullChildren(): " + e);
+             return null;
+         }
+@@ -325,8 +324,8 @@ public class PQNode {
+ 
+     public List<PQNode> fullAndPartialChildren() {
+         try {
+-            throw new NotImplementedException();
+-        } catch (NotImplementedException e) {
++            throw new IllegalStateException();
++        } catch (IllegalStateException e) {
+             System.err.println("fullAndPartialChildren(): " + e);
+             return null;
+         }
+@@ -334,8 +333,8 @@ public class PQNode {
+ 
+     public List<PQNode> getChildren() {
+         try {
+-            throw new NotImplementedException();
+-        } catch (NotImplementedException e) {
++            throw new IllegalStateException();
++        } catch (IllegalStateException e) {
+             System.err.println("getChildren(): " + e);
+             return null;
+         }
+@@ -346,56 +345,56 @@ public class PQNode {
+ 
+     public void addChildren(List<PQNode> children) {
+         try {
+-            throw new NotImplementedException();
+-        } catch (NotImplementedException e) {
++            throw new IllegalStateException();
++        } catch (IllegalStateException e) {
+             System.err.println("addChildren(): " + e);
+         }
+     }
+ 
+     public void addChild(PQNode child) {
+         try {
+-            throw new NotImplementedException();
+-        } catch (NotImplementedException e) {
++            throw new IllegalStateException();
++        } catch (IllegalStateException e) {
+             System.err.println("addChild(PQNode): " + e);
+         }
+     }
+ 
+     public void addChild(PQNode child, boolean left) {
+         try {
+-            throw new NotImplementedException();
+-        } catch (NotImplementedException e) {
++            throw new IllegalStateException();
++        } catch (IllegalStateException e) {
+             System.err.println("addChild(PQNode, boolean): " + e);
+         }
+     }
+ 
+     public void removeChildren(List<PQNode> removalNodes) {
+         try {
+-            throw new NotImplementedException();
+-        } catch (NotImplementedException e) {
++            throw new IllegalStateException();
++        } catch (IllegalStateException e) {
+             System.err.println("removeChildren(): " + e);
+         }
+     }
+ 
+     public void removeChild(PQNode child) {
+         try {
+-            throw new NotImplementedException();
+-        } catch (NotImplementedException e) {
++            throw new IllegalStateException();
++        } catch (IllegalStateException e) {
+             System.err.println("removeChild(): " + e);
+         }
+     }
+ 
+     public void replaceChild(PQNode newChild, PQNode oldChild) {
+         try {
+-            throw new NotImplementedException();
+-        } catch (NotImplementedException e) {
++            throw new IllegalStateException();
++        } catch (IllegalStateException e) {
+             System.err.println("replaceChild(): " + e);
+         }
+     }
+ 
+     public void clearChildren() {
+         try {
+-            throw new NotImplementedException();
+-        } catch (NotImplementedException e) {
++            throw new IllegalStateException();
++        } catch (IllegalStateException e) {
+             System.err.println("clearChildren(): " + e);
+         }
+     }
+diff --git a/evaluation/javaEvaluation/src/main/java/java_evaluation/graphtea/PQTree.java b/evaluation/javaEvaluation/src/main/java/java_evaluation/graphtea/PQTree.java
+index b0a84ee..07c74d0 100644
+--- a/evaluation/javaEvaluation/src/main/java/java_evaluation/graphtea/PQTree.java
++++ b/evaluation/javaEvaluation/src/main/java/java_evaluation/graphtea/PQTree.java
+@@ -20,6 +20,7 @@ import java.util.*;
+  */
+ 
+ public class PQTree {
++    protected int numLeaves;
+ 
+     /**
+      * This subroutine determines which nodes of the PQ-Tree should be pruned
+@@ -998,7 +999,7 @@ public class PQTree {
+             }
+         }
+ 
+-        PQHelpers.reduceChildQNodeIntoParentQNode(partialNode, (QNode) x);
++        PQHelpers.reduceChildQNodeIntoParentQNode(partialNode, (QNode) x, numLeaves);
+ 
+         x.setParentQNodeChildren();
+ 
+diff --git a/evaluation/javaEvaluation/src/main/java/java_evaluation/graphtea/QNode.java b/evaluation/javaEvaluation/src/main/java/java_evaluation/graphtea/QNode.java
+index 2ec3a06..cc932c1 100644
+--- a/evaluation/javaEvaluation/src/main/java/java_evaluation/graphtea/QNode.java
++++ b/evaluation/javaEvaluation/src/main/java/java_evaluation/graphtea/QNode.java
+@@ -115,7 +115,7 @@ public class QNode extends PQNode {
+         return list;
+     }
+ 
+-    public void removeChildren(List<PQNode> removalNodes) {
++    public void removeChildren(List<PQNode> removalNodes, int numLeaves) {
+ 
+         if (this.endmostChildren().size() == 0) return;
+ 
+@@ -140,6 +140,9 @@ public class QNode extends PQNode {
+ 
+             } else {
+                 survivors.add(traversal);
++                if (survivors.size() > 2 * numLeaves + 1) {
++                    throw new IllegalStateException("Problem in removeChildren()");
++                }
+             }
+             traversal = traversal.getCircularLink_next();
+         } while (traversal != start);
+-- 
+2.35.1
+

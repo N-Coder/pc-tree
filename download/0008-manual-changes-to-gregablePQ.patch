@@ -1,0 +1,241 @@
+From c4cc6f8faabd2f1245b148962ae12ee0c47de08c Mon Sep 17 00:00:00 2001
+From: Simon Dominik Niko Fink <simon.fink@uni-passau.de>
+Date: Sun, 27 Feb 2022 10:56:57 +0100
+Subject: [PATCH 8/8] manual changes to gregablePQ
+
+---
+ libraries/gregablePQ/pqnode.cc |  3 ++-
+ libraries/gregablePQ/pqnode.h  | 33 ++++++++++++++++--------
+ libraries/gregablePQ/pqtree.cc | 46 ++++++++++++++++++++++++++++++++--
+ libraries/gregablePQ/pqtree.h  | 12 +++++++--
+ 4 files changed, 78 insertions(+), 16 deletions(-)
+
+diff --git a/libraries/gregablePQ/pqnode.cc b/libraries/gregablePQ/pqnode.cc
+index 2095982..1a4304d 100644
+--- a/libraries/gregablePQ/pqnode.cc
++++ b/libraries/gregablePQ/pqnode.cc
+@@ -26,6 +26,7 @@
+ #include "pqnode.h"
+ 
+ using namespace std;
++using namespace gregable;
+ 
+ PQNode::PQNode_types PQNode::Type() {
+     return type_;
+@@ -365,7 +366,7 @@ void PQNode::ReplaceCircularLink(PQNode *old_child, PQNode *new_child) {
+ // functions.  Each is a depth-first walk of the entire tree looking for data
+ // at the leaves.
+ // TODO: Could probably be implemented better using function pointers.
+-void PQNode::FindLeaves(map<int, PQNode *> &leafAddress) {
++void PQNode::FindLeaves(vector<PQNode *> &leafAddress) {
+     if (type_ == leaf) {
+         leafAddress[leaf_value_] = this;
+     } else if (type_ == pnode) {
+diff --git a/libraries/gregablePQ/pqnode.h b/libraries/gregablePQ/pqnode.h
+index 40c1941..3c54189 100644
+--- a/libraries/gregablePQ/pqnode.h
++++ b/libraries/gregablePQ/pqnode.h
+@@ -25,24 +25,32 @@
+ #include <vector>
+ using namespace std;
+ 
++namespace gregable {
+ 
+ class PQNode {
+     // PQNodes are not exposed by pqtrees, they are internally used only.
+     friend class PQTree;
++
+     friend class QNodeChildrenIterator;
+ 
+ public:
+     // Enum types we use throughout.
+-    enum PQNode_types { leaf,
+-                        pnode,
+-                        qnode };
+-    enum PQNode_marks { unmarked,
+-                        queued,
+-                        blocked,
+-                        unblocked };
+-    enum PQNode_labels { empty,
+-                         full,
+-                         partial };
++    enum PQNode_types {
++        leaf,
++        pnode,
++        qnode
++    };
++    enum PQNode_marks {
++        unmarked,
++        queued,
++        blocked,
++        unblocked
++    };
++    enum PQNode_labels {
++        empty,
++        full,
++        partial
++    };
+ 
+     // Returns the type of the current node, an enum of type PQNode_types.
+     PQNode_types Type();
+@@ -198,7 +206,7 @@ private:
+     void LabelAsFull();
+ 
+     // Walks the tree to build a map from values to leaf pointers.
+-    void FindLeaves(map<int, PQNode *> &leafAddress);
++    void FindLeaves(vector<PQNode *> &leafAddress);
+ 
+     // Walks the tree to find it's Frontier, returns one possible ordering.
+     void FindFrontier(list<int> &ordering);
+@@ -252,10 +260,13 @@ public:
+ private:
+     // Next() helper method to deal with pseudonodes.
+     void NextPseudoNodeSibling();
++
+     PQNode *parent_;
+     PQNode *current_;
+     PQNode *next_;
+     PQNode *prev_;
+ };
+ 
++}
++
+ #endif
+diff --git a/libraries/gregablePQ/pqtree.cc b/libraries/gregablePQ/pqtree.cc
+index 5ae2640..796d0e0 100644
+--- a/libraries/gregablePQ/pqtree.cc
++++ b/libraries/gregablePQ/pqtree.cc
+@@ -17,6 +17,8 @@
+ 
+ #include <assert.h>
+ 
++using namespace gregable;
++
+ PQTree::PQTree(const PQTree &to_copy) {
+     CopyFrom(to_copy);
+ }
+@@ -37,6 +39,7 @@ void PQTree::CopyFrom(const PQTree &to_copy) {
+     reductions_ = to_copy.reductions_;
+ 
+     leaf_address_.clear();
++    leaf_address_.reserve(to_copy.leaf_address_.capacity());
+     root_->FindLeaves(leaf_address_);
+ }
+ 
+@@ -668,6 +671,7 @@ void PQTree::CleanPseudo() {
+ // Basic constructor from an initial set.
+ PQTree::PQTree(set<int> reduction_set) {
+     // Set up the root node as a P-Node initially.
++    leaf_address_.reserve((*reduction_set.end()) + 1);
+     root_ = new PQNode;
+     root_->type_ = PQNode::pnode;
+     invalid_ = false;
+@@ -750,14 +754,17 @@ bool PQTree::Reduce(set<int> reduction_set) {
+         return false;
+     }
+ 
+-    // Reset all the temporary variables for the next round.
+-    root_->Reset();
+ 
+     // Store the reduction set for later lookup.
+     reductions_.push_back(reduction_set);
+     return true;
+ }
+ 
++void PQTree::cleanUp() {
++    // Reset all the temporary variables for the next round.
++    root_->Reset();
++}
++
+ bool PQTree::ReduceAll(list<set<int>> L) {
+     for (list<set<int>>::iterator S = L.begin(); S != L.end(); S++) {
+         if (!Reduce(*S))
+@@ -800,6 +807,41 @@ set<int> PQTree::GetContained() {
+     return out;
+ }
+ 
++Bigint PQTree::possibleOrders() {
++    Bigint orders(1);
++
++    std::queue<PQNode *> queue;
++
++    queue.push(root_);
++
++    while (!queue.empty()) {
++        PQNode *nextNode = queue.front();
++        queue.pop();
++
++        if (nextNode->type_ == PQNode::pnode) {
++            int childCount = nextNode == root_ ? nextNode->ChildCount() - 1 : nextNode->ChildCount();
++            orders *= factorial(childCount);
++            for (PQNode *child : nextNode->circular_link_) {
++                if (child->type_ != PQNode::leaf) {
++                    queue.push(child);
++                }
++            }
++        } else if (nextNode->type_ == PQNode::qnode) {
++            orders *= 2;
++            QNodeChildrenIterator it(nextNode);
++
++            while (!it.IsDone()) {
++                if (it.Current()->type_ != PQNode::leaf) {
++                    queue.push(it.Current());
++                }
++                it.Next();
++            }
++        }
++    }
++
++    return orders;
++}
++
+ // Default destructor, Needs to delete the root.
+ PQTree::~PQTree() {
+     delete root_;
+diff --git a/libraries/gregablePQ/pqtree.h b/libraries/gregablePQ/pqtree.h
+index 4c8b694..4bab1ae 100644
+--- a/libraries/gregablePQ/pqtree.h
++++ b/libraries/gregablePQ/pqtree.h
+@@ -21,6 +21,7 @@ Booth and George S. Lueker in the Journal of Computer and System Sciences 13,
+ // with the PQ Tree Library.  If not, see <http://www.gnu.org/licenses/>.
+ 
+ 
++#include "bigInt/bigint.h"
+ #include "pqnode.h"
+ #include "set_methods.h"
+ #include <iostream>
+@@ -34,7 +35,8 @@ using namespace std;
+ 
+ #ifndef PQTREE_H
+ #define PQTREE_H
+-
++namespace gregable {
++using namespace Dodecahedron;
+ class PQTree {
+ private:
+     // Root node of the PQTree
+@@ -57,7 +59,7 @@ private:
+     // increases the time complexity of the algorithm.  To fix, you can create an
+     // array of items so that each item hashes to its leaf address in constant
+     // time, but this is a tradeoff to conserve space.
+-    map<int, PQNode *> leaf_address_;
++    vector<PQNode *> leaf_address_;
+ 
+     // A reference to a pseudonode that cannot be reached through the root
+     // of the tree.  The pseudonode is a temporary node designed to handle
+@@ -146,6 +148,12 @@ public:
+ 
+     // Returns the set of all elements on which a reduction was performed.
+     set<int> GetContained();
++
++    Bigint possibleOrders();
++
++    void cleanUp();
+ };
+ 
++}
++
+ #endif
+-- 
+2.35.1
+

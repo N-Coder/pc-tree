@@ -1,0 +1,107 @@
+From 9e67bb2118d1dc54dd2085978b8465134893d1ea Mon Sep 17 00:00:00 2001
+From: Simon Dominik Niko Fink <simon.fink@uni-passau.de>
+Date: Sun, 27 Feb 2022 10:53:40 +0100
+Subject: [PATCH 2/8] manual changes to jgraphed
+
+---
+ .../java/java_evaluation/jgraphed/PQNode.java | 28 ++++++++++++++++++-
+ .../java/java_evaluation/jgraphed/PQTree.java | 17 ++++++++---
+ .../java/java_evaluation/jgraphed/Queue.java  |  2 +-
+ 3 files changed, 41 insertions(+), 6 deletions(-)
+
+diff --git a/evaluation/javaEvaluation/src/main/java/java_evaluation/jgraphed/PQNode.java b/evaluation/javaEvaluation/src/main/java/java_evaluation/jgraphed/PQNode.java
+index bc3ebf1..dc560fd 100644
+--- a/evaluation/javaEvaluation/src/main/java/java_evaluation/jgraphed/PQNode.java
++++ b/evaluation/javaEvaluation/src/main/java/java_evaluation/jgraphed/PQNode.java
+@@ -1,6 +1,7 @@
+ package java_evaluation.jgraphed;
+ 
+-import java.awt.*;
++import java.awt.Color;
++import java.math.BigInteger;
+ import java.util.Vector;
+ 
+ // The secondary model component of the model/view/controller for this application
+@@ -1696,4 +1697,29 @@ public class PQNode {
+         }
+         return subNodeCount;
+     }
++
++    public BigInteger getPossibleOrders(boolean root) throws Exception {
++        BigInteger orders = BigInteger.ONE;
++
++        switch (type) {
++            case TYPE_PNODE:
++                int num = root ? childCount - 1 : childCount;
++                for (int i = 2; i <= num; i++) {
++                    orders = orders.multiply(BigInteger.valueOf(i));
++                }
++                break;
++            case TYPE_QNODE:
++                orders = orders.multiply(BigInteger.valueOf(2));
++                break;
++            default:
++                throw new IllegalStateException("invalid node type in getPossibleOrders()");
++        }
++
++        Vector<PQNode> children = getAllChildren();
++        for (int i = 0; i < children.size(); i++) {
++            orders = orders.multiply(children.elementAt(i).getPossibleOrders(false));
++        }
++
++        return orders;
++    }
+ }
+diff --git a/evaluation/javaEvaluation/src/main/java/java_evaluation/jgraphed/PQTree.java b/evaluation/javaEvaluation/src/main/java/java_evaluation/jgraphed/PQTree.java
+index 727dcbc..9083d3f 100644
+--- a/evaluation/javaEvaluation/src/main/java/java_evaluation/jgraphed/PQTree.java
++++ b/evaluation/javaEvaluation/src/main/java/java_evaluation/jgraphed/PQTree.java
+@@ -1,6 +1,6 @@
+ package java_evaluation.jgraphed;
+ 
+-import dataStructure.Queue;
++import java.math.BigInteger;
+ import java.util.Iterator;
+ import java.util.Vector;
+ 
+@@ -202,9 +202,10 @@ public class PQTree {
+     // returns the root of the pertinent subtree...
+     public PQNode reduction(int numSteps) throws Exception {
+         PQNode pertRoot = null;
+-        if (!cleared) {
+-            clear();
+-        }
++        //    if ( !cleared )
++        //    {
++        //      clear();
++        //    }
+         long timeTaken = System.currentTimeMillis();
+         boolean previouslyDoneReduction = doneReduction;
+         if (queue == null) {
+@@ -898,4 +899,12 @@ public class PQTree {
+     public int getNumDeletedNodes() throws Exception {
+         return root.countSubDeletedNodes();
+     }
++
++    public BigInteger getPossibleOrders() {
++        try {
++            return root.getPossibleOrders(true);
++        } catch (Exception e) {
++            throw new IllegalStateException("Error during getPossibleOrders: " + e.toString());
++        }
++    }
+ }
+\ No newline at end of file
+diff --git a/evaluation/javaEvaluation/src/main/java/java_evaluation/jgraphed/Queue.java b/evaluation/javaEvaluation/src/main/java/java_evaluation/jgraphed/Queue.java
+index f7fa4e8..a1ef452 100644
+--- a/evaluation/javaEvaluation/src/main/java/java_evaluation/jgraphed/Queue.java
++++ b/evaluation/javaEvaluation/src/main/java/java_evaluation/jgraphed/Queue.java
+@@ -1,4 +1,4 @@
+-package dataStructure;
++package java_evaluation.jgraphed;
+ 
+ // This class represents a Queue data structure used for storing nodes
+ // that are used during the reduction process of the PQTree.
+-- 
+2.35.1
+
