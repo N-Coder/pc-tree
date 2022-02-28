@@ -122,7 +122,7 @@ HEATMAP.set_under("white")
 HEATMAP.set_over("white")
 HEATMAP.set_bad("white")
 
-db = pymongo.MongoClient(
+db = MongoClient(
     "pc-tree-mongo", connectTimeoutMS=2000 
 ).pc_tree
 
