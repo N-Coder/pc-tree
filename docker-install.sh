@@ -13,6 +13,7 @@ MailProg=/bin/true
 ProctrackType=proctrack/pgid
 SelectType=select/cons_res
 SelectTypeParameters=CR_Core
+MaxArraySize=200000
 
 EOF
 

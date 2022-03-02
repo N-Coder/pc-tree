@@ -193,7 +193,7 @@ To run the evaluation and generate the plots from the paper:
 python3 evaluation.py batch-test-planarity --checkpoint=50000 out/graphs2n/*.gml
 python3 evaluation.py batch-test-planarity --checkpoint=50000 out/graphs3n/*.gml
 python3 evaluation.py batch-test-restrictions
-python3 evaluation.py batch-test-matrices
+python3 evaluation.py batch-test-matrices --batchsize=100
 
 python3 plots/restrictions.py
 python3 plots/planarity.py
