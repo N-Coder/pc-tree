@@ -52,7 +52,7 @@ docker run --name pc-tree-mongo --network pc-tree-net --publish 27017:27017 --de
 
 # Build the image and start the container
 docker build --tag pc-tree-image .
-docker run --name pc-tree-slurm --network pc-tree-net --publish 8888:8888 --volume .:/root/pc-tree:z --tty --interactive pc-tree-image /bin/bash
+docker run --name pc-tree-slurm --network pc-tree-net --publish 8888:8888 --volume ${PWD}:/root/pc-tree:z --tty --interactive pc-tree-image /bin/bash
 
 # now, within the container (e.g. root@9b8368ef788c:~# )
 cd /root/pc-tree
@@ -161,22 +161,22 @@ $ ./test_planarity_performance -i ../evaluation/demo-graph.gml
 The following commands (i.e. `evaluation.py batch-*` and the `plots/`) require Slurm and MongoDB.
 To generate a small test data set that can be used to roughly reproduce our results within a few hours:
 ```shell
-# in /root/pc-tree/build-release
+# in /root/pc-tree/evaluation
 mkdir out/graphs2n
 mkdir out/graphs3n
-for i in {100000..1000000..200000}; do ./make_graphs $i $((2*i)) 1 1 1 out/graphs2n; done
-for i in {100000..1000000..200000}; do ./make_graphs $i $((3*i)) 1 1 1 out/graphs3n; done
+for i in {100000..1000000..200000}; do ../build-release/make_graphs $i $((2*i)) 1 1 1 out/graphs2n; done
+for i in {100000..1000000..200000}; do ../build-release/make_graphs $i $((3*i)) 1 1 1 out/graphs3n; done
 python3 evaluation.py batch-make-restrictions --nodes-to=15000 --nodes-step=2000 --planar
-python3 evaluation.py batch-make-restrictions --nodes-to=15000 --nodes-step=2000
+python3 evaluation.py batch-make-restrictions --nodes-to=15000 --nodes-step=100
 python3 evaluation.py batch-make-restrictions-matrix --min-size=10 --max-size=500 --start-seed=1 --count=100
 ```
 
 The full input data set used by the paper can be obtained with the following configuration, but be aware that the following evaluation will take quite some time:
 ```shell
-for i in {100000..1000000..100000}; do ./make_graphs $i $((2*i)) 1 1 1 out/graphs2n; done
-for i in {100000..1000000..100000}; do ./make_graphs $i $((3*i)) 1 1 1 out/graphs3n; done
-for i in {100000..1000000..100000}; do ./make_graphs $i $((2*i)) 9 2 1 out/graphs2n; done
-for i in {100000..1000000..100000}; do ./make_graphs $i $((3*i)) 9 2 1 out/graphs3n; done
+for i in {100000..1000000..100000}; do ../build-release/make_graphs $i $((2*i)) 1 1 1 out/graphs2n; done
+for i in {100000..1000000..100000}; do ../build-release/make_graphs $i $((3*i)) 1 1 1 out/graphs3n; done
+for i in {100000..1000000..100000}; do ../build-release/make_graphs $i $((2*i)) 9 2 1 out/graphs2n; done
+for i in {100000..1000000..100000}; do ../build-release/make_graphs $i $((3*i)) 9 2 1 out/graphs3n; done
 python3 evaluation.py batch-make-restrictions --planar # uses default args from evaluation.py
 python3 evaluation.py batch-make-restrictions --nodes-to=20000 --nodes-step=10
 python3 evaluation.py batch-make-restrictions-matrix --min-size=10 --max-size=500 --start-seed=1 --count=1000

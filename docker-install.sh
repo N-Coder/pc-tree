@@ -12,7 +12,7 @@ PartitionName=slurm-in-docker-partition Nodes=$(hostname -s) Default=YES MaxTime
 MailProg=/bin/true
 ProctrackType=proctrack/pgid
 SelectType=select/cons_res
-SelectTypeParameter=CR_Core
+SelectTypeParameters=CR_Core
 
 EOF
 
