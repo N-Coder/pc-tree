@@ -1,14 +1,14 @@
-From 022d48a6181e68645cec24f2b6f722acd67482d0 Mon Sep 17 00:00:00 2001
+From 3022f964edbe9eac3d51666c2afa54c564a31680 Mon Sep 17 00:00:00 2001
 From: Simon Dominik Niko Fink <simon.fink@uni-passau.de>
-Date: Sun, 27 Feb 2022 12:19:12 +0100
+Date: Wed, 2 Mar 2022 16:40:19 +0100
 Subject: [PATCH 3/8] manual changes to jppzanetti
 
 ---
  .../java/java_evaluation/jppzanetti/Leaf.java |   9 +-
  .../java/java_evaluation/jppzanetti/Node.java |  10 +-
- .../java_evaluation/jppzanetti/PQRNode.java   | 124 ++++++-
+ .../java_evaluation/jppzanetti/PQRNode.java   | 120 ++++++-
  .../java_evaluation/jppzanetti/PQRTree.java   | 331 ++++++++++++++++--
- 4 files changed, 439 insertions(+), 35 deletions(-)
+ 4 files changed, 435 insertions(+), 35 deletions(-)
 
 diff --git a/evaluation/javaEvaluation/src/main/java/java_evaluation/jppzanetti/Leaf.java b/evaluation/javaEvaluation/src/main/java/java_evaluation/jppzanetti/Leaf.java
 index 60331f9..ae3324f 100644
@@ -81,7 +81,7 @@ index 6f1ff4f..a874a8e 100644
 +    public abstract BigInteger getPossibleOrders(boolean root);
  }
 diff --git a/evaluation/javaEvaluation/src/main/java/java_evaluation/jppzanetti/PQRNode.java b/evaluation/javaEvaluation/src/main/java/java_evaluation/jppzanetti/PQRNode.java
-index 9bbcb35..e94f337 100644
+index 9bbcb35..310b5e3 100644
 --- a/evaluation/javaEvaluation/src/main/java/java_evaluation/jppzanetti/PQRNode.java
 +++ b/evaluation/javaEvaluation/src/main/java/java_evaluation/jppzanetti/PQRNode.java
 @@ -1,22 +1,24 @@
@@ -189,7 +189,7 @@ index 9bbcb35..e94f337 100644
          }
      }
  
-@@ -699,4 +707,100 @@ class PQRNode extends Node {
+@@ -699,4 +707,96 @@ class PQRNode extends Node {
      boolean areAllChildrenBlack() {
          return (this.blackChildren.size() == this.getChildCount());
      }
@@ -283,15 +283,11 @@ index 9bbcb35..e94f337 100644
 +
 +    @Override
 +    public Iterator<Node> iterator() {
-+        if (firstChild.sibling[0] != null && firstChild.sibling[1] != null ||
-+            lastChild.sibling[0] != null && lastChild.sibling[1] != null) {
-+            throw new AssertionError("Tree has invalid state. Aborting.");
-+        }
 +        return new ChildIterator(firstChild);
 +    }
  }
 diff --git a/evaluation/javaEvaluation/src/main/java/java_evaluation/jppzanetti/PQRTree.java b/evaluation/javaEvaluation/src/main/java/java_evaluation/jppzanetti/PQRTree.java
-index 9cfcb34..1a862af 100644
+index 9cfcb34..84540ee 100644
 --- a/evaluation/javaEvaluation/src/main/java/java_evaluation/jppzanetti/PQRTree.java
 +++ b/evaluation/javaEvaluation/src/main/java/java_evaluation/jppzanetti/PQRTree.java
 @@ -1,6 +1,7 @@
@@ -332,7 +328,7 @@ index 9cfcb34..1a862af 100644
 -            this.root.insertEnd(this.leaf[i]);
 +            this.leaf.add(i, new Leaf(i));
 +            this.root.insertEnd(leaf.get(i));
-+            assert this.leaf.get(i).value == i;
++            //			assert this.leaf.get(i).value == i;
          }
  
          this.visitedNodes = new LinkedList<>();
@@ -363,7 +359,7 @@ index 9cfcb34..1a862af 100644
          for (int i : c) {
 -            this.leaf[i].visit();
 -            queue.add(this.leaf[i]);
-+            assert this.leaf.get(i).value == i;
++            //			assert this.leaf.get(i).value == i;
 +            this.leaf.get(i).visit();
 +            queue.add(this.leaf.get(i));
          }

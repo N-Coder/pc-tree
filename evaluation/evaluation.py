@@ -197,7 +197,7 @@ def test_restrictions(ttypes, all, infiles):
     test_restrictions = sh.Command("test_restrictions", [BUILD_DIR])
     #likwid = sh.Command("likwid-perfctr", [BUILD_DIR]).bake("-C", 0, "-g", "CYCLE_STALLS", "-o", "likwid.txt", "-m")
     # likwid = sh.Command("likwid-perfctr").bake("-C", "S0:2", "-g", "CYCLE_STALLS", "-o", "likwid.txt", "-m")
-    java = sh.Command("java").bake("-jar", JAVA_EVAL_RESTRS_PATH)
+    java = sh.Command("java").bake("-jar", "-ea", JAVA_EVAL_RESTRS_PATH)
     all_restrictions = "-A" if all else []
     test_commands = {
         "UFPC": test_restrictions.bake("-t", "UFPC"),
