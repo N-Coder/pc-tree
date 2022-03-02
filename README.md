@@ -15,7 +15,7 @@ needs `clang` and `clang-format`, preferably version 11.
 
 Running the evaluation automatically needs a [Slurm](https://slurm.schedmd.com/) cluster, esp. the `sbatch` command, to run all jobs in parallel.
 Furthermore, credentials for a [MongoDB](https://www.mongodb.com/) database and collection for the evaluation results need to be entered in `evaluation.py` and `plots/common.py`.
-We provide a preconfigured [Docker container](#via_Docker) that provides this environment on a single machine without a runtime overhead.
+We provide a preconfigured [Docker container](#via-docker) that provides this environment on a single machine without a runtime overhead.
 
 ## Installation
 
@@ -127,33 +127,39 @@ $ ./test_restrictions -t UFPC out/G-n1000-m3000-s0-p1_0
 
 Or test planarity on a whole graph:
 ```shell
-$ ./test_planarity -t UFPC ../evaluation/demo-graph.gml
-{"c_nodes":52,"file":"demo-graph.gml","fingerprint":"27393384","index":1000,"leaves":491,
- "name":"UFPC","p_nodes":105,"result":true,"size":5,"time":246484,"tp_length":5,"type":"UFPC","uid":"..."}
+$ ./make_graphs 100000 200000 1 1 1 out
+$ ./test_planarity -t UFPC out/graphn100000e200000s1i0planar.gml
+{"c_nodes":16,"file":"out/graphn100000e200000s1i0planar.gml","index":442,"leaves":252,"name":"UFPC",
+    "p_nodes":45,"result":true,"size":31,"time":3026,"tp_length":12,"type":"UFPC"}
+{"c_nodes":40,"file":"out/graphn100000e200000s1i0planar.gml","fingerprint":"53655202","index":1000,
+    "leaves":405,"name":"UFPC","p_nodes":99,"result":true,"size":1,"time":30,"tp_length":0,
+    "type":"UFPC","uid":"..."}
 ...
-{"c_nodes":5,"file":"demo-graph.gml","index":99810,"leaves":70,
- "name":"UFPC","p_nodes":12,"result":true,"size":30,"time":525288,"tp_length":2,"type":"UFPC"}
-$ ./test_planarity_performance -i ../evaluation/demo-graph.gml
+{"c_nodes":3,"file":"out/graphn100000e200000s1i0planar.gml","index":99908,"leaves":70,"name":"UFPC",
+    "p_nodes":16,"result":true,"size":31,"time":1282,"tp_length":1,"type":"UFPC"}
+$ ./test_planarity_performance -i out/graphn100000e200000s1i0planar.gml
 {
     "edges": 200000,
-    "id": "demo-graph.gml",
+    "id": "out/graphn100000e200000s1i0planar.gml",
     "nodes": 100000,
     "repetition": 0,
     "results": {
         "BoothLueker::doTest": true,
         "BoothLueker::isPlanarDestructive": true,
         "BoyerMyrvold::isPlanarDestructive": true,
+        "CppZanetti::isPlanar": false,
         "HsuPC::isPlanar": true,
         "UFPC::isPlanar": true,
         "stNumbering": 100000
     },
     "times": {
-        "BoothLueker::doTest":               217639127,
-        "BoothLueker::isPlanarDestructive":  520770152,
-        "BoyerMyrvold::isPlanarDestructive": 411274012,
-        "HsuPC::isPlanar":                   105999142,
-        "UFPC::isPlanar":                     95510479,
-        "stNumbering":                        87719342
+        "BoothLueker::doTest":               183143247,
+        "BoothLueker::isPlanarDestructive":  470191620,
+        "BoyerMyrvold::isPlanarDestructive": 351698185,
+        "CppZanetti::isPlanar":                1763263, // reports non-planar graph (see "results")
+        "HsuPC::isPlanar":                    86491828,
+        "UFPC::isPlanar":                     72982740,
+        "stNumbering":                        82167932
     }
 }
 ```
@@ -171,7 +177,7 @@ python3 evaluation.py batch-make-restrictions --nodes-to=15000 --nodes-step=100
 python3 evaluation.py batch-make-restrictions-matrix --min-size=10 --max-size=500 --start-seed=1 --count=100
 ```
 
-The full input data set used by the paper can be obtained with the following configuration, but be aware that the following evaluation will take quite some time:
+The full input data set used by the paper can be obtained with the following configuration, but be aware that running the evaluation will take quite some time:
 ```shell
 for i in {100000..1000000..100000}; do ../build-release/make_graphs $i $((2*i)) 1 1 1 out/graphs2n; done
 for i in {100000..1000000..100000}; do ../build-release/make_graphs $i $((3*i)) 1 1 1 out/graphs3n; done
