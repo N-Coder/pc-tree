@@ -1,10 +1,10 @@
 # PC-Trees
 
-This is the code accompanying the paper "Experimental Comparison of PC-Trees and PQ-Trees".
-The source code for UFPC can be found in the "include" and "src" directories,
+This is the code accompanying the paper ["Experimental Comparison of PC-Trees and PQ-Trees"](https://arxiv.org/abs/2106.14805).
+The source code for the union-find based PC-tree *UFPC* can be found in the "include" and "src" directories,
 where only the top-level files are part of the implementation,
 the other directories contain various utilities.
-The code for HsuPC can be found in the [HsuPCSubmodule](https://github.com/N-Coder/pc-tree/tree/HsuPCSubmodule) branch.
+The code for *HsuPC* can be found in the [HsuPCSubmodule](https://github.com/N-Coder/pc-tree/tree/HsuPCSubmodule) branch.
 Compiling the code requires cmake and a working OGDF installation.
 For an example how to use the trees, see `src/test/construction.cpp` and `src/exec/test_planarity.cpp`.
 
@@ -13,9 +13,9 @@ It can be downloaded automatically, though, using the script `download/download.
 Note that the conversion of Zanetti to C++ and applying our minor changes to other implementations
 needs `clang` and `clang-format`, preferably version 11.
 
-Running the evaluation automatically needs a SLURM cluster, esp. the `sbatch` command, to run all jobs in parallel.
-Furthermore, credentials for a MongoDB database and collection for the evaluation results need to be entered in `evaluation.py` and `plots/common.py`.
-We provide a preconfigured Docker container that provides this environment on a single machine without a runtime overhead.
+Running the evaluation automatically needs a [Slurm](https://slurm.schedmd.com/) cluster, esp. the `sbatch` command, to run all jobs in parallel.
+Furthermore, credentials for a [MongoDB](https://www.mongodb.com/) database and collection for the evaluation results need to be entered in `evaluation.py` and `plots/common.py`.
+We provide a preconfigured [Docker container](#via_Docker) that provides this environment on a single machine without a runtime overhead.
 
 ## Installation
 
@@ -36,19 +36,16 @@ cd ..
 # Build everything 
 mkdir build-release
 cd build-release/
-cmake .. -DCMAKE_BUILD_TYPE=RELEASE -DOGDF_DIR=/scratch/finksim/ogdf/build-release
-# to enable LIKWID also pass -DLIKWID_PERFMON=true and possibly -DLIKWID_DIR=~/likwid/install/
+cmake .. -DCMAKE_BUILD_TYPE=RELEASE -DOGDF_DIR=/path/to/ogdf/build-release
+# to enable LIKWID also pass -DLIKWID_PERFMON=true and possibly -DLIKWID_DIR=/path/to/likwid/install/
 # to also compile other implementations for comparison pass -DOTHER_LIBS=true
 make -j 8
 ```
 
+### via Docker
+
 Alternatively, you can use our Docker container with an environment that is prepared for reproducing our experiments:
 ```shell
-# Check out project and submodules
-git clone https://github.com/N-Coder/pc-tree.git pc-tree
-cd pc-tree/
-git submodule update --init --recursive
-
 # Create a virtual network and start a MongoDB instance 
 docker network create pc-tree-net
 docker run --name pc-tree-mongo --network pc-tree-net --publish 27017:27017 --detach mongo
@@ -61,7 +58,7 @@ docker run --name pc-tree-slurm --network pc-tree-net --publish 8888:8888 --volu
 cd /root/pc-tree
 # build the binaries (including other libraries for comparison) optimized for your machine
 ./docker-install.sh
-# start the slurm daemon (this needs to be done everytime you re-enter the container)
+# start the slurm daemon (this needs to be done every time you re-enter the container)
 ./docker-start.sh
 ```
 
@@ -70,19 +67,20 @@ To start a jupyter notebook within the container, run the following command and 
 # jupyter notebook --allow-root --ip=0.0.0.0 --port=8888
 ```
 To see the contents of the MongoDB, point a mongo client (e.g. [MongoDB Compass](https://www.mongodb.com/products/compass)) to `localhost:27017`.
-Alternatively, you can also request a `mongo` shell from the host machine:
+Alternatively, you can also request a `mongo` shell by running the following on the host machine:
 ```
 $ docker exec -ti pc-tree-mongo mongosh
 ```
-If you accidentally exited the `pc-tree-slurm` bash shell, you can re-enter the container with any previous changes retained by running:
+If you accidentally exited the `pc-tree-slurm` bash shell, you can re-enter the container (with any previous changes retained) by running:
 ```
 $ docker start -ai pc-tree-slurm
-# ./docker-start.sh # restart slurmd
+# ./docker-start.sh # to restart slurmd within the container
 ```
 
 ## Running the Evaluation Code
 
-Once your environment is set up, you can generate some restrictions and test an implemenation on them:
+Once the code is compiled, you can generate some restrictions and test an implementation on them.
+The following commands will also work without Slurm and MongoDB.
 ```shell
 $ cd /root/pc-tree/build-release && mkdir out
 $ ./make_restrictions_planarity out -n 1000 -m 3000 -p -s 0
@@ -160,6 +158,7 @@ $ ./test_planarity_performance -i ../evaluation/demo-graph.gml
 }
 ```
 
+The following commands (i.e. `evaluation.py batch-*` and the `plots/`) require Slurm and MongoDB.
 To generate a small test data set that can be used to roughly reproduce our results within a few hours:
 ```shell
 # in /root/pc-tree/build-release
@@ -172,7 +171,7 @@ python3 evaluation.py batch-make-restrictions --nodes-to=15000 --nodes-step=2000
 python3 evaluation.py batch-make-restrictions-matrix --min-size=10 --max-size=500 --start-seed=1 --count=100
 ```
 
-The full data set used the paper can be obtained with the following configuration, but be aware that the evaluation will take quite some time:
+The full input data set used by the paper can be obtained with the following configuration, but be aware that the following evaluation will take quite some time:
 ```shell
 for i in {100000..1000000..100000}; do ./make_graphs $i $((2*i)) 1 1 1 out/graphs2n; done
 for i in {100000..1000000..100000}; do ./make_graphs $i $((3*i)) 1 1 1 out/graphs3n; done
