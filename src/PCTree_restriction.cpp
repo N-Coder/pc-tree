@@ -385,41 +385,49 @@ bool PCTree::findTerminalPath() {
             log << " (" << parent->tempInfo().label << ")";
         log << ", current TP length is " << terminalPathLength << ": ";
 
-        if (node->nodeType == PCNodeType::CNode && tinfo.label == NodeLabel::Partial) {
-            if (!checkTPPartialCNode(node))
-                return false;
+        if (node->nodeType == PCNodeType::CNode && tinfo.label == NodeLabel::Partial
+                && !checkTPPartialCNode(node))
+            return false;
+        if (tinfo.label == NodeLabel::Partial) {
+            tinfo.tpPartialPred = node;
+            tinfo.tpPartialHeight = 0;
         }
 
         OGDF_ASSERT((parent == nullptr) == (node == rootNode));
-        if (node == apexCandidate || tinfo.tpSucc != nullptr) {
+        if (tinfo.tpSucc != nullptr) {
             // we never process a node twice, proceeding to the next entry if we detect this case
-            if (tinfo.tpSucc == nullptr) {
-                // we haven't counted the apex yet
-                terminalPathLength++;
-                tinfo.tpSucc = node;
-            }
             log << "dupe!" << std::endl;
-        } else if (firstPartial == nullptr && apexCandidate == nullptr) {
-            // we can stop early if the queue size reached 1 right before we removed the current node, but we have neither found an apex nor an apex candidate,
+            continue;
+        }
+
+        if (firstPartial == nullptr && apexCandidate == nullptr) {
+            // we can stop early if the queue size reached 1 right before we removed the current node, but we have not found an apex,
             // marking the node the remaining arc points to as apex candidate
-            apexCandidate = node;
-            terminalPathLength++;
-            log << "early stop!" << std::endl;
+            log << "early stop I-shaped!" << std::endl;
+            bool s = setApexCandidate(node, false);
+            OGDF_ASSERT(s);
+        } else if (firstPartial == nullptr && apexCandidate != nullptr && apexTPPred2 != nullptr
+                && tinfo.tpPartialPred == apexCandidate->tempInfo().tpPartialPred) {
+            log << "early stop A-shaped!" << std::endl;
+            OGDF_ASSERT(apexCandidate->tempInfo().tpPartialHeight <= tinfo.tpPartialHeight);
+            OGDF_ASSERT(apexCandidateIsFix);
+#ifdef OGDF_DEBUG
+            // setApexCandidate here should make no changes, but just re-do the checks from this branch and keep the old apex
+            PCNode* oldApex = apexCandidate;
+            bool s = setApexCandidate(node, false);
+            OGDF_ASSERT(s);
+            OGDF_ASSERT(apexCandidate == oldApex);
+#endif
         } else if (node == rootNode || parent->tempInfo().label == NodeLabel::Full) {
             // we can't ascend from the root node or if our parent is full
             log << "can't ascend from root / node with full parent!" << std::endl;
-            tinfo.tpSucc = node;
-            terminalPathLength++;
             if (!setApexCandidate(node, false)) return false;
         } else {
-            PCNode::TempInfo &parent_tinfo = parent->tempInfo();
-            tinfo.tpSucc = parent;
-            terminalPathLength++;
+            // check that we can ascend through a C-Node (P-Nodes always work)
             if (node->nodeType == PCNodeType::CNode) {
                 if (tinfo.label == NodeLabel::Empty) {
                     if (!node->isChildOuter(tinfo.tpPred)) {
                         log << "can't ascend from empty C-Node where TP pred is not adjacent to parent!" << std::endl;
-                        tinfo.tpSucc = node;
                         if (!setApexCandidate(node, false)) return false;
                         continue;
                     } else {
@@ -430,26 +438,27 @@ bool PCTree::findTerminalPath() {
                     OGDF_ASSERT(tinfo.label == NodeLabel::Partial);
                     if (!node->isChildOuter(tinfo.fbEnd1) && !node->isChildOuter(tinfo.fbEnd2)) {
                         log << "can't ascend from partial C-Node where full block is not adjacent to parent!" << std::endl;
-                        tinfo.tpSucc = node;
                         if (!setApexCandidate(node, false)) return false;
                         continue;
                     }
                 }
             }
+
+            // ascend to parent
+            terminalPathLength++;
+            tinfo.tpSucc = parent;
+            PCNode::TempInfo& parent_tinfo = parent->tempInfo();
             if (parent_tinfo.tpPred == nullptr) {
+                // attach current path to parent
                 parent_tinfo.tpPred = node;
-                if (parent_tinfo.label != NodeLabel::Partial) {
-                    if (tinfo.label == NodeLabel::Partial) {
-                        parent_tinfo.tpPartialPred = node;
-                        parent_tinfo.tpPartialHeight = 1;
-                    } else {
-                        parent_tinfo.tpPartialPred = tinfo.tpPartialPred;
-                        parent_tinfo.tpPartialHeight = tinfo.tpPartialHeight + 1;
-                    }
+                if (parent_tinfo.label != NodeLabel::Partial) { // parent might be empty or full
+                    parent_tinfo.tpPartialPred = tinfo.tpPartialPred;
+                    parent_tinfo.tpPartialHeight = tinfo.tpPartialHeight + 1;
                     OGDF_ASSERT(parent_tinfo.tpPartialPred != nullptr);
                     addPartialNode(parent);
                     log << "proceed to non-partial parent (whose partial height is " << parent_tinfo.tpPartialHeight << ")" << std::endl;
                 } else {
+                    OGDF_ASSERT(parent_tinfo.label == NodeLabel::Partial);
                     log << "partial parent is already queued" << std::endl;
                 }
             } else if (parent_tinfo.tpPred != node) {
@@ -470,6 +479,7 @@ bool PCTree::findTerminalPath() {
                     }
                 }
             }
+
             // if the parent is a partial C-node, it might have been processed before we were added as its tpPred(2), so re-run the checks
             if (parent->nodeType == PCNodeType::CNode && parent_tinfo.label == NodeLabel::Partial) {
                 if (!checkTPPartialCNode(parent))
@@ -479,14 +489,17 @@ bool PCTree::findTerminalPath() {
     }
     OGDF_ASSERT(lastPartial == nullptr);
     OGDF_ASSERT(partialCount == 0);
+    OGDF_ASSERT(apexCandidate != nullptr);
     if (!apexCandidateIsFix) {
-        OGDF_ASSERT(apexCandidate != nullptr);
         if (apexCandidate->tempInfo().label != NodeLabel::Partial) {
             log << "Backtracking from " << apexCandidate << " to " << apexCandidate->tempInfo().tpPartialPred
                 << ", TP length " << terminalPathLength << "-" << apexCandidate->tempInfo().tpPartialHeight << "=";
-            terminalPathLength -= apexCandidate->tempInfo().tpPartialHeight; // this must happen before we overwrite apexCandidate
+            terminalPathLength -= apexCandidate->tempInfo().tpPartialHeight;
             apexCandidate = apexCandidate->tempInfo().tpPartialPred;
             log << terminalPathLength << std::endl;
+            OGDF_ASSERT(
+                apexCandidate->tempInfo().tpPartialHeight <=
+                terminalPathLength); // make sure we didn't ascent too far
         }
         apexCandidateIsFix = true;
     }
@@ -831,6 +844,13 @@ int PCTree::findEndOfFullBlock(PCNode *node, PCNode *pred, PCNode *curr, PCNode 
 }
 
 bool PCTree::setApexCandidate(PCNode *ac, bool fix) {
+    if (ac->tempInfo().tpSucc == nullptr) {
+        terminalPathLength++;
+    } else if (ac->tempInfo().tpSucc != ac) {
+        log << "  Note: already ascended from new " << (apexCandidateIsFix ? "" : "non-")
+            << "fix apex (" << ac << ") to (" << ac->tempInfo().tpSucc << ")" << std::endl;
+    }
+    ac->tempInfo().tpSucc = ac; // mark ac as processed
     if (apexCandidate == nullptr) {
         apexCandidate = ac;
         apexCandidateIsFix = fix;
