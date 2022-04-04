@@ -10,8 +10,6 @@
 /evaluation/javaEvaluation/src/main/java/java_evaluation/jppzanetti/
 /evaluation/javaEvaluation/src/main/java/java_evaluation/jgraphed/
 /evaluation/javaEvaluation/src/main/java/java_evaluation/graphtea/
-/libraries/bigInt/
-/libraries/json.hpp
 
 !/libraries/zanettiPQR/NodeRef.hpp
 !/libraries/zanettiPQR/PQRTree.cpp

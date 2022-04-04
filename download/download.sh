@@ -21,8 +21,8 @@ wget -O gtea.zip      https://github.com/rostam/GTea/archive/8e6db4b0801c3a37ca3
 wget -O bivoc.tar.gz  http://bioinformatics.cs.vt.edu/~murali/software/downloads/bivoc-1.2.tar.gz
 wget -O sagemath.py   https://raw.githubusercontent.com/sagemath/sage/5f756e06afc44ce7f5433fddeddc1e3b177b6f7a/src/sage/graphs/pq_trees.py
 
-wget -O bigint.zip    https://github.com/kasparsklavins/bigint/archive/0a6367f851895bbb95a4b093dc042f4ceb2c4c3c.zip
-wget -O json.hpp      https://raw.githubusercontent.com/nlohmann/json/v3.9.1/single_include/nlohmann/json.hpp
+# wget -O bigint.zip    https://github.com/kasparsklavins/bigint/archive/0a6367f851895bbb95a4b093dc042f4ceb2c4c3c.zip
+# wget -O json.hpp      https://raw.githubusercontent.com/nlohmann/json/v3.9.1/single_include/nlohmann/json.hpp
 
 # md5sum *.zip *.tar.gz *.py *.hpp
 # 7df01561c4a4aca0e4713644fa832db3  bigint.zip
@@ -46,7 +46,7 @@ unzip -q gtea.zip     -d gtea
 mkdir -p bivoc
 tar -xaf bivoc.tar.gz -C bivoc
 
-unzip -q bigint.zip   -d bigint
+# unzip -q bigint.zip   -d bigint
 
 
 mkdir -p \
@@ -57,8 +57,8 @@ mkdir -p \
 	../libraries/graphSetPQ/ \
 	../evaluation/javaEvaluation/src/main/java/java_evaluation/jppzanetti/ \
 	../evaluation/javaEvaluation/src/main/java/java_evaluation/jgraphed/ \
-	../evaluation/javaEvaluation/src/main/java/java_evaluation/graphtea/ \
-	../libraries/bigInt/
+	../evaluation/javaEvaluation/src/main/java/java_evaluation/graphtea/
+	# ../libraries/bigInt/
 
 cp sagemath.py \
 	../evaluation/sagemath/pq_trees.py
@@ -90,11 +90,11 @@ cp gtea/GTea-*/src/main/java/graphtea/extensions/reports/planarity/planaritypq/p
 cp gtea/GTea-*/src/main/java/graphtea/extensions/reports/planarity/planaritypq/pqtree/*/*.java \
 	../evaluation/javaEvaluation/src/main/java/java_evaluation/graphtea/
 
-cp bigint/bigint-*/src/* \
-	../libraries/bigInt/
+# cp bigint/bigint-*/src/* \
+# 	../libraries/bigInt/
 
-cp json.hpp \
-	../libraries/
+# cp json.hpp \
+# 	../libraries/
 
 
 pushd ../libraries/

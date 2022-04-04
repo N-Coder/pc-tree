@@ -4,3 +4,6 @@
 [submodule "libraries/hsuPC"]
 	path = libraries/hsuPC
 	url = https://github.com/N-Coder/pc-tree.git
+[submodule "libraries/bigint-repo"]
+	path = libraries/bigint-repo
+	url = https://github.com/kasparsklavins/bigint.git
