@@ -84,9 +84,11 @@ def cli():
 @cli.command()
 @click.option("--local", is_flag=True)
 @click.option("--clean", is_flag=True)
-def compile(local, clean):
+@click.option("--nojava", is_flag=True)
+def compile(local, clean, nojava):
     tasks = ["clean"] if clean else []
-    sh.Command("gradlew", [JAVA_DIR])(*tasks, "build", _cwd=JAVA_DIR, _out=sys.stdout, _err=sys.stderr)
+    if not nojava:
+        sh.Command("gradlew", [JAVA_DIR])(*tasks, "build", _cwd=JAVA_DIR, _out=sys.stdout, _err=sys.stderr)
     rsh = sh
     if not local:
         rsh = bake_srun(time="00:05:00", job_name="pctree compile")

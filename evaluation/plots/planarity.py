@@ -77,8 +77,11 @@ pprint(Counter(frozenset(e["errors"]) for e in errors))
 # %%
 
 for t in IMPLS_DESC_FASTEST:
-    col = df["entries.%s.time" % t]
-    print(t, len(col), stats.describe(col.dropna()), col.median())
+    try:
+        col = df["entries.%s.time" % t]
+        print(t, len(col), stats.describe(col.dropna()), col.median())
+    except:
+        pass
 
 
 # %%
@@ -103,10 +106,16 @@ def overlay_lines(ax, data, x, y, color, range):
 def make_scatterplot(data, x, ylim, range, filename):
     fig, ax = plt.subplots()
     for impl in IMPLS_DESC_FASTEST:
-        sns.scatterplot(x=x, y="entries.%s.time" % impl, label=impl, data=data, ax=ax, s=25, alpha=0.5,
-                        color=COLORS[impl], marker=MARKERS[impl])
+        try:
+            sns.scatterplot(x=x, y="entries.%s.time" % impl, label=impl, data=data, ax=ax, s=25, alpha=0.5,
+                            color=COLORS[impl], marker=MARKERS[impl])
+        except:
+            pass
     for impl in IMPLS_DESC_FASTEST:
-        overlay_lines(ax, data, x, "entries.%s.time" % impl, COLORS[impl], range)
+        try:
+            overlay_lines(ax, data, x, "entries.%s.time" % impl, COLORS[impl], range)
+        except:
+            pass
     ax.set(ylabel="Time [ns]", xlabel=NAMES[x])
     ax.set_ylim(*ylim)
     ax.legend(loc='upper right')

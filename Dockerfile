@@ -32,7 +32,8 @@ RUN pip install --no-cache-dir \
     seaborn \
     sh \
     tabulate \
-    tqdm
+    tqdm \
+    scipy
 
 WORKDIR /opt
 RUN git clone https://github.com/ogdf/ogdf.git ogdf \

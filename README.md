@@ -42,9 +42,15 @@ cmake .. -DCMAKE_BUILD_TYPE=RELEASE -DOGDF_DIR=/path/to/ogdf/build-release
 make -j 8
 ```
 
+(Optional) To build the project for evaluating the other java implementations, run the following commands (note that this requires running `download.sh` beforehand):
+```shell
+cd evaluation/javaEvaluation
+./gradlew build
+``` 
+
 ### via Docker
 
-Alternatively, you can use our Docker container with an environment that is prepared for reproducing our experiments:
+Alternatively, you can use our Docker container with an environment that is prepared for reproducing our experiments. For this, it suffices to download the `Dockerfile` we provide.
 ```shell
 # Create a virtual network and start a MongoDB instance 
 docker network create pc-tree-net
@@ -52,11 +58,11 @@ docker run --name pc-tree-mongo --network pc-tree-net --publish 27017:27017 --de
 
 # Build the image and start the container
 docker build --tag pc-tree-image .
-docker run --name pc-tree-slurm --network pc-tree-net --publish 8888:8888 --volume ${PWD}:/root/pc-tree:z --tty --interactive pc-tree-image /bin/bash
+docker run --name pc-tree-slurm --network pc-tree-net --publish 8888:8888 --tty --interactive pc-tree-image /bin/bash
 
 # now, within the container (e.g. root@9b8368ef788c:~# )
 cd /root/pc-tree
-# build the binaries (including other libraries for comparison) optimized for your machine
+# build the binaries (including other libraries for comparison) optimized for your machine. Pass the flag -l to skip the download and compilation of the other libraries to only compare HsuPC, UFPC, and OGDF.
 ./docker-install.sh
 # start the slurm daemon (this needs to be done every time you re-enter the container)
 ./docker-start.sh
@@ -77,6 +83,26 @@ $ docker start -ai pc-tree-slurm
 # ./docker-start.sh # to restart slurmd within the container
 ```
 
+#### Failed Downloads
+
+If downloading one of the other libraries fails, manually applying the following changes in the docker container ensures that the evaluation still compiles and runs for the remaining libraries.  
+If one of the C++ libraries is not present, the `CMakeLists.txt` should detect this and only build the remaining targets, thus no action should be necessary.  
+If one of the Java libraries `JGraphEd` or `GraphTea` is not present, delete the corresponding adapter file in `evaluation/javaEvaluation/src/main/java/java_evaluation` and comment out the invocation of this adapter in `evaluation/javaEvaluation/src/main/java/java_evaluation/TestRestrictions.java`.
+For example, for `GraphTea`, this would mean deleting the file `GraphTeaAdapter.java` and removing the lines
+```Java
+case GraphTea:
+    tree = new GraphTeaAdapter(numLeaves);
+    break;
+```
+in `TestRestrictions.java`.
+Subsequently, rerunning `./docker-install.sh` as described above should successfully compile the project.
+
+If you want to skip the entire build process for the java libraries, additionally add the flag `--nojava` to the line
+```shell
+python3 evaluation.py compile ...
+```
+in `docker-install.sh`.
+ 
 ## Running the Evaluation Code
 
 Once the code is compiled, you can generate some restrictions and test an implementation on them.

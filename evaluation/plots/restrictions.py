@@ -126,19 +126,22 @@ def evaluate(aggregation, filename_prefix, buckets_distplots, buckets_relplots):
         total_vals = 0
         for ttype in counter:
             if ttype == "all": continue
-            col = matrices["results.%s.time" % ttype]
-            nan_count = np.count_nonzero(np.isnan(col))
-            val_count = len(col) - nan_count
-            total_vals += val_count
-            error_count = sum(v for k, v in errors_counts.items() if k[0] == ttype)
-            table.append({
-                "ttype": ttype,
-                "seen_docs": counter[ttype],
-                "errors": error_count,
-                "rows": len(col),
-                "val_rows": val_count,
-                "nan_rows": nan_count,
-            })
+            try:
+                col = matrices["results.%s.time" % ttype]
+                nan_count = np.count_nonzero(np.isnan(col))
+                val_count = len(col) - nan_count
+                total_vals += val_count
+                error_count = sum(v for k, v in errors_counts.items() if k[0] == ttype)
+                table.append({
+                    "ttype": ttype,
+                    "seen_docs": counter[ttype],
+                    "errors": error_count,
+                    "rows": len(col),
+                    "val_rows": val_count,
+                    "nan_rows": nan_count,
+                })
+            except:
+                pass
         return exp_result_counts, total_vals, errors_counts, table
 
 
@@ -280,6 +283,7 @@ def evaluate(aggregation, filename_prefix, buckets_distplots, buckets_relplots):
             data=df_scatter, alpha=0.5,
             legend=True, ax=ax
         )
+        line_data = line_data.dropna()
         sns.lineplot(
             x=x_axis, y=y_axis,
             dashes=False, markers=False,
@@ -337,23 +341,26 @@ def evaluate(aggregation, filename_prefix, buckets_distplots, buckets_relplots):
 
         df = df[(df["full_leaves"] < max_res_size) & (df["tree_size"] < max_tree_size)]
         for tree_type, ax in zip(IMPLS_DESC, axes.flatten()):
-            dfi = df[df["tree_type"] == tree_type]
-            groups = dfi.groupby([pd.cut(dfi["tree_size"], nbuckets_y), pd.cut(dfi["full_leaves"], nbuckets_x)])
-            vals = groups[value].median()
-            # vals[groups[value].count() < 3] = -1
-            vmin = vals.min()
-            # vmax = np.quantile(groups[value], 0.99)
-            sns.heatmap(
-                data=vals.unstack(), cmap="flare", cbar=False, xticklabels=tick_steps_x, yticklabels=tick_steps_y, ax=ax,
-                vmin=vmin,  # vmax=vmax
-            )
-            ax.set_xticklabels([int(max_res_size / nbuckets_x) * i for i in range(1, nbuckets_x + 1, tick_steps_x)])
-            ax.set_yticklabels([int(max_tree_size / nbuckets_y) * i for i in range(1, nbuckets_y + 1, tick_steps_y)])
-            ax.set(xlabel="", ylabel="")
-            ax.title.set_text(tree_type)
-            ax.invert_yaxis()
-            for _, spine in ax.spines.items():
-                spine.set_visible(True)
+            try:
+                dfi = df[df["tree_type"] == tree_type]
+                groups = dfi.groupby([pd.cut(dfi["tree_size"], nbuckets_y), pd.cut(dfi["full_leaves"], nbuckets_x)])
+                vals = groups[value].median()
+                # vals[groups[value].count() < 3] = -1
+                vmin = vals.min()
+                # vmax = np.quantile(groups[value], 0.99)
+                sns.heatmap(
+                    data=vals.unstack(), cmap="flare", cbar=False, xticklabels=tick_steps_x, yticklabels=tick_steps_y, ax=ax,
+                    vmin=vmin,  # vmax=vmax
+                )
+                ax.set_xticklabels([int(max_res_size / nbuckets_x) * i for i in range(1, nbuckets_x + 1, tick_steps_x)])
+                ax.set_yticklabels([int(max_tree_size / nbuckets_y) * i for i in range(1, nbuckets_y + 1, tick_steps_y)])
+                ax.set(xlabel="", ylabel="")
+                ax.title.set_text(tree_type)
+                ax.invert_yaxis()
+                for _, spine in ax.spines.items():
+                    spine.set_visible(True)
+            except:
+                pass
 
         for ax in axes[:, 0]:
             ax.set_ylabel(NAMES["tree_size"])
