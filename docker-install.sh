@@ -1,8 +1,15 @@
 #!/bin/bash
 
-set -e
 set -x
 set +f
+
+OTHER_LIBS="true"
+while getopts 'l' flag; do
+  case "${flag}" in
+    l) OTHER_LIBS='false' ;;
+    *) exit 1 ;;
+  esac
+done
 
 cat > /etc/slurm/slurm.conf <<EOF
 ClusterName=slurm-in-docker
@@ -37,12 +44,17 @@ cmake .. \
 make -j $(nproc)
 chmod -R 755 /opt/ogdf
 
-cd /root/pc-tree/download/
-./download.sh
+if [ $OTHER_LIBS = "true" ]
+then
+	cd /root/pc-tree/download/
+	./download.sh
+fi
 
 mkdir -p /root/pc-tree/build-release
 cd /root/pc-tree/build-release
-cmake .. -DCMAKE_BUILD_TYPE=RELEASE -DOGDF_DIR=/opt/ogdf/build-release/ -DOTHER_LIBS=true
+cmake .. -DCMAKE_BUILD_TYPE=RELEASE -DOGDF_DIR=/opt/ogdf/build-release/ -DOTHER_LIBS=$OTHER_LIBS
+
 cd ../evaluation
-mkdir out
-python3 evaluation.py compile --local
+mkdir -p out
+python3 evaluation.py compile --local $( [ $OTHER_LIBS = "false" ] && echo "--nojava" )
+

@@ -5,7 +5,7 @@
 #include "hsuPC/include/PCTree.h"
 #include "hsuPC/include/PCNode.h"
 
-#ifdef OTHER_LIBS
+#ifdef ENABLE_CPPZANETTI
 #include "zanettiPQR/PQRTree.h"
 #endif
 
@@ -147,7 +147,7 @@ bool isPlanarPC(const Graph &G, const NodeArray<int> &numbering) {
     return true;
 }
 
-#ifdef OTHER_LIBS
+#ifdef ENABLE_CPPZANETTI
 bool isPlanarPQR(const Graph &G, const NodeArray<int> &numbering) {
     std::unique_ptr<cpp_zanetti::PQRTree> T;
 
@@ -293,7 +293,7 @@ int main(int argc, char **argv) {
 
         test(results, "HsuPC::isPlanar", [&] { return isPlanarPC<pc_tree::hsu::PCTree, pc_tree::hsu::PCNode, pc_tree::hsu::PCTree::PCNodeType>(G, numbering); });
         test(results, "BoothLueker::doTest", [&] { return isPlanarPQ(G, numbering); });
-#ifdef OTHER_LIBS
+#ifdef ENABLE_CPPZANETTI
         test(results, "CppZanetti::isPlanar", [&] { return isPlanarPQR(G, numbering); });
 #endif
         Graph G1(G);

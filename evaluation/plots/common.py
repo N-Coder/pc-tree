@@ -66,7 +66,12 @@ def make_speedupplot(data, x, ylim, range, filename, loc="upper right"):
     fig, ax = plt.subplots()
 
     ys = ["speedup.%s" % impl for impl in IMPLS_COMPARE]
-    data = data.dropna(subset=[x, *ys])
+    data = data.dropna(subset=[x])
+    for y in ys:
+        try:
+            data = data.dropna(subset=[y])
+        except:
+            pass
     x_buckets = pd.cut(data[x], range)
     groups = data.groupby(x_buckets)
 
@@ -75,16 +80,22 @@ def make_speedupplot(data, x, ylim, range, filename, loc="upper right"):
     #                     color=COLORS[impl], marker=MARKERS[impl])
 
     for impl in IMPLS_COMPARE:
-        y = "speedup.%s" % impl
-        lower = groups[y].quantile(0.25).reset_index()
-        upper = groups[y].quantile(0.75).reset_index()
-        ax.fill_between(lower[x].apply(lambda x: x.mid), lower[y], upper[y], color=COLORS[impl], alpha=0.3)
+        try:
+            y = "speedup.%s" % impl
+            lower = groups[y].quantile(0.25).reset_index()
+            upper = groups[y].quantile(0.75).reset_index()
+            ax.fill_between(lower[x].apply(lambda x: x.mid), lower[y], upper[y], color=COLORS[impl], alpha=0.3)
+        except:
+            pass
 
     for impl in IMPLS_COMPARE:
-        y = "speedup.%s" % impl
-        line = groups[y].median().reset_index()
-        ax.plot(line[x].apply(lambda x: x.mid), line[y], color="white", linewidth=2)
-        ax.plot(line[x].apply(lambda x: x.mid), line[y], color=COLORS[impl], linewidth=1, label=impl)
+        try:
+            y = "speedup.%s" % impl
+            line = groups[y].median().reset_index()
+            ax.plot(line[x].apply(lambda x: x.mid), line[y], color="white", linewidth=2)
+            ax.plot(line[x].apply(lambda x: x.mid), line[y], color=COLORS[impl], linewidth=1, label=impl)
+        except:
+            pass
 
     ax.set_ylabel("Speedup over OGDF")
     ax.set_xlabel(NAMES[x])

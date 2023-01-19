@@ -8,7 +8,7 @@
 #include <hsuPC/include/PCTree.h>
 #include <hsuPC/include/PCNode.h>
 
-#ifdef OTHER_LIBS
+#ifdef ENABLE_CPPZANETTI
 #include "zanettiPQR/PQRTree.h"
 #endif
 
@@ -265,7 +265,7 @@ long isPlanarPC(Graph &G, NodeArray<int> &numbering) {
     return accumTime;
 }
 
-#ifdef OTHER_LIBS
+#ifdef ENABLE_CPPZANETTI
 long isPlanarPQR(const Graph &G, NodeArray<int> &numbering) {
     std::unique_ptr<cpp_zanetti::PQRTree> T;
     long accumTime = 0;
@@ -421,7 +421,7 @@ int main(int argc, char **argv) {
             isPlanarPC<pc_tree::hsu::PCTree, pc_tree::hsu::PCNode, pc_tree::hsu::PCTree::PCNodeType, pc_tree::hsu::PCTreeNodeArray>(G, numbering);
         } else if (type == "OGDF") {
             isPlanarPQ(G, numbering);
-#ifdef OTHER_LIBS
+#if ENABLE_CPPZANETTI
         } else if (type == "CppZanetti") {
             isPlanarPQR(G, numbering);
 #endif

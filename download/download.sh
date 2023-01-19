@@ -1,6 +1,5 @@
 #!/bin/bash
 
-set -e
 set -x
 set +f
 
@@ -11,12 +10,12 @@ git submodule update --init --recursive
 # rm -rf ../evaluation/javaEvaluation/src/main/java/java_evaluation/*/
 # rm -rf ../libraries/*
 
-wget -O reisle.zip    https://github.com/creisle/pq-trees/archive/7d059a5570f541065c1cf3307e14037f2fd08771.zip
-wget -O gregable.zip  https://github.com/Gregable/pq-trees/archive/61c7ed7a4a40453a4816a04749ca6ae1229df42c.zip
+wget -O reisle.zip    https://github.com/creisle/pq-trees/archive/7d059a5570f541065c1cf3307e14037f2fd08771.zip # https://archive.softwareheritage.org/swh:1:rev:7d059a5570f541065c1cf3307e14037f2fd08771;origin=https://github.com/creisle/pq-trees;visit=swh:1:snp:d4a67010824fb9c0d4a353107094e7d241fa28a0
+wget -O gregable.zip  https://github.com/Gregable/pq-trees/archive/61c7ed7a4a40453a4816a04749ca6ae1229df42c.zip # https://archive.softwareheritage.org/swh:1:rev:61c7ed7a4a40453a4816a04749ca6ae1229df42c;origin=https://github.com/Gregable/pq-trees;visit=swh:1:snp:bc540751bcdc049824ae055ee423b7831c8b6ae5
 wget -O graphset.zip  http://graphset.cs.arizona.edu/files/GraphSET_1_011.zip
-wget -O zanetti.zip   https://github.com/jppzanetti/PQRTree/archive/6349e2eddbeb67b94e8093174ee9c6f43a822527.zip
+wget -O zanetti.zip   https://github.com/jppzanetti/PQRTree/archive/6349e2eddbeb67b94e8093174ee9c6f43a822527.zip # https://archive.softwareheritage.org/swh:1:rev:6349e2eddbeb67b94e8093174ee9c6f43a822527;origin=https://github.com/jppzanetti/PQRTree;visit=swh:1:snp:69af8d06a54e26dd6bd1666d993e638e6ff4c5ad
 wget -O jgraphed.zip  https://www3.cs.stonybrook.edu/~algorith/implement/jgraphed/distrib/JGraphEd.zip
-wget -O gtea.zip      https://github.com/rostam/GTea/archive/8e6db4b0801c3a37ca31a241a6843f74980998e7.zip
+wget -O gtea.zip      https://github.com/rostam/GTea/archive/8e6db4b0801c3a37ca31a241a6843f74980998e7.zip # https://archive.softwareheritage.org/swh:1:rev:8e6db4b0801c3a37ca31a241a6843f74980998e7;origin=https://github.com/rostam/GTea;visit=swh:1:snp:b0b98f1fb530ad6e08780898f04074ae2c5508ad
 
 wget -O bivoc.tar.gz  http://bioinformatics.cs.vt.edu/~murali/software/downloads/bivoc-1.2.tar.gz
 wget -O sagemath.py   https://raw.githubusercontent.com/sagemath/sage/5f756e06afc44ce7f5433fddeddc1e3b177b6f7a/src/sage/graphs/pq_trees.py
