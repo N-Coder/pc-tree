@@ -57,7 +57,7 @@ docker network create pc-tree-net
 docker run --name pc-tree-mongo --network pc-tree-net --publish 27017:27017 --detach mongo
 
 # Build the image and start the container
-docker build --tag pc-tree-image .
+docker build --no-cache --pull --tag pc-tree-image .
 docker run --name pc-tree-slurm --network pc-tree-net --publish 8888:8888 --tty --interactive pc-tree-image /bin/bash
 
 # now, within the container (e.g. root@9b8368ef788c:~# )

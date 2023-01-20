@@ -35,12 +35,12 @@ wget -O sagemath.py   https://raw.githubusercontent.com/sagemath/sage/5f756e06af
 # 2268d0567b356af74cc2978843eaaa5c  sagemath.py
 # 0006494aa70845c788601c5906584d2d  json.hpp
 
-unzip -q reisle.zip   -d reisle
-unzip -q gregable.zip -d gregable
-unzip -q graphset.zip -d graphset
-unzip -q zanetti.zip  -d zanetti
-unzip -q jgraphed.zip -d jgraphed
-unzip -q gtea.zip     -d gtea
+unzip -o -q reisle.zip   -d reisle
+unzip -o -q gregable.zip -d gregable
+unzip -o -q graphset.zip -d graphset
+unzip -o -q zanetti.zip  -d zanetti
+unzip -o -q jgraphed.zip -d jgraphed
+unzip -o -q gtea.zip     -d gtea
 
 mkdir -p bivoc
 tar -xaf bivoc.tar.gz -C bivoc
