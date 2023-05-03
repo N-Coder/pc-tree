@@ -25,9 +25,13 @@ message("OGDF_IMPORTED_CONFIGURATIONS is ${OGDF_IMPORTED_CONFIGURATIONS}")
 add_library(bigInt libraries/bigInt/bigint.cpp)
 
 if (LIKWID_PERFMON)
-    message("Including LIKWID")
-    #set(LIKWID_DIR /home/user/likwid/install/share/likwid)
-    find_package(likwid REQUIRED)
+    #set(likwid_DIR /home/user/likwid/install/share/likwid)
+    if (TARGET likwid-library)
+        message("LIKWID already loaded")
+    else()
+        message("Including LIKWID")
+        find_package(likwid REQUIRED)
+    endif()
 endif ()
 
 ## Other Implementations as libraries
@@ -62,7 +66,7 @@ if (OTHER_LIBS)
 
     set(BIVOC_PQ_DIR ${CMAKE_CURRENT_LIST_DIR}/libraries/bivocPQ)
     if (EXISTS ${BIVOC_PQ_DIR}/pqnode.h AND EXISTS ${BIVOC_PQ_DIR}/pqtree.h)
-        add_library(bivocPQ SHARED ${BIVOC_PQ_DIR}/pqnode.h ${BIVOC_PQ_DIR}/pqtree.h)
+        add_library(bivocPQ ${BIVOC_PQ_DIR}/pqnode.h ${BIVOC_PQ_DIR}/pqtree.h)
         set_target_properties(bivocPQ PROPERTIES LINKER_LANGUAGE CXX)
         target_include_directories(bivocPQ PRIVATE "libraries")
         list(APPEND COMPARE_LIBRARIES bivocPQ)
@@ -170,3 +174,25 @@ if (LIKWID_PERFMON)
     target_link_libraries(test_restrictions likwid-library)
 endif ()
 
+add_library(${PROJECT_NAME} ${SOURCE_FILES})
+set_target_properties(${PROJECT_NAME} PROPERTIES
+        VERSION ${PROJECT_VERSION}
+        SOVERSION 1)
+target_include_directories(${PROJECT_NAME} PRIVATE ${OGDF_INCLUDE_DIRS} "libraries")
+target_include_directories(${PROJECT_NAME} PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/libraries>
+        $<INSTALL_INTERFACE:include>)
+#target_link_libraries(${TARGET} INTERFACE OGDF bigInt)
+
+install(TARGETS ${PROJECT_NAME} EXPORT PCTreeConfig
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME})
+
+install(EXPORT PCTreeConfig DESTINATION cmake)
+
+export(TARGETS ${PROJECT_NAME} bigInt FILE PCTreeConfig.cmake)
+
+# see https://stackoverflow.com/a/49863065

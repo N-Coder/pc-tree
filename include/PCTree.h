@@ -155,7 +155,7 @@ namespace pc_tree {
 
         bool checkValid() const;
 
-        bool isValidOrder(std::vector<PCNode *> &order) const;
+        bool isValidOrder(const std::vector<PCNode *> &order) const;
 
         void getTree(ogdf::Graph &tree, ogdf::GraphAttributes *g_a, PCTreeNodeArray<ogdf::node> &pc_repr,
                      ogdf::NodeArray<PCNode *> *g_repr = nullptr, bool mark_full = false) const;
@@ -174,7 +174,7 @@ namespace pc_tree {
         std::string uniqueID(const std::function<void(std::ostream &os, PCNode *, int)> &printNode = uid_utils::nodeToID,
                              const std::function<bool(PCNode *, PCNode *)> &compareNodes = uid_utils::compareNodesByID) {
             std::stringstream sb;
-            uniqueID(sb, printNode);
+            uniqueID(sb, printNode, compareNodes);
             return sb.str();
         }
 

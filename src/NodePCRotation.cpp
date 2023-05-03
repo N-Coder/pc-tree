@@ -10,7 +10,7 @@ using namespace Dodecahedron;
 
 using RegisteredEdgeSet = RegisteredElementSet<edge, Graph>;
 
-NodePCRotation::NodePCRotation(Graph &G, node end, const bool mapBundleEdges) :
+NodePCRotation::NodePCRotation(const Graph &G, node end, const bool mapBundleEdges) :
         m_G(&G), m_n(end), incidentEdgeForLeaf(*this, nullptr), graphNodeForInnerNode(*this, nullptr) {
     // Compute st-numbering for graph and order the nodes accordingly.
     NodeArray<int> numbering(G);
@@ -66,7 +66,13 @@ NodePCRotation::NodePCRotation(Graph &G, node end, const bool mapBundleEdges) :
         bool twinPoleCandidate = false;
         if (mapBundleEdges) {
             twinPoleCandidate = true;
-            bundleEdges.clear();
+            if (bundleEdges.size() * 10 < G.numberOfEdges()) {
+                while (!bundleEdges.elements().empty()) {
+                    bundleEdges.remove(bundleEdges.elements().front());
+                }
+            } else {
+                bundleEdges.clear();
+            }
         }
         if (n == order[0]) {
             // Create root node for first node of graph.
@@ -111,11 +117,21 @@ NodePCRotation::NodePCRotation(Graph &G, node end, const bool mapBundleEdges) :
         if (outEdges.size() > 1) {
             consecutiveLeaves.clear(); // re-use consecutiveLeaves
             std::vector<PCNode *> &addedLeaves = consecutiveLeaves;
-            if (mergedLeaf->getNodeType() == PCNodeType::PNode) {
-                insertLeaves(outEdges.size(), mergedLeaf, &addedLeaves);
-            } else {
-                replaceLeaf(outEdges.size(), mergedLeaf, &addedLeaves);
+            if (mergedLeaf->getNodeType() == PCNodeType::Leaf) {
+                if (getLeafCount() <= 2) {
+                    // see also replaceLeaf
+                    PCNode *parent = mergedLeaf->getParent();
+                    OGDF_ASSERT(parent == getRootNode());
+
+                    mergedLeaf->detach();
+                    destroyNode(mergedLeaf);
+
+                    mergedLeaf = parent;
+                    graphNodeForInnerNode[mergedLeaf] = n;
+                }
+                changeNodeType(mergedLeaf, PCNodeType::PNode);
             }
+            insertLeaves(outEdges.size(), mergedLeaf, &addedLeaves);
 
             for (int i = 0; i < outEdges.size(); i++) {
                 // For each edge store which leaf represents it.
@@ -165,8 +181,81 @@ node NodePCRotation::getTrivialPartnerPole() const {
         return partner;
 }
 
-
-node NodePCRotation::getTrivialPartnerPole(Graph &G, node pole) {
+node NodePCRotation::getTrivialPartnerPole(const Graph &G, node pole) {
     NodePCRotation pc(G, pole, false);
     return pc.getTrivialPartnerPole();
+}
+
+bool NodePCRotation::isEqual(const NodePCRotation &pc) const {
+    OGDF_ASSERT(checkValid());
+    OGDF_ASSERT(pc.checkValid());
+    if (getGraph() != pc.getGraph()) return false;
+    if (getNode() != pc.getNode()) return false;
+    if (getLeafCount() != pc.getLeafCount()) return false;
+    if (getPNodeCount() != pc.getPNodeCount()) return false;
+    if (getCNodeCount() != pc.getCNodeCount()) return false;
+    if (possibleOrders() != pc.possibleOrders()) return false;
+
+    EdgeArray<PCNode *> mapping(*m_G, nullptr);
+    pc.generateLeafForIncidentEdgeMapping(mapping);
+    std::vector<PCNode *> order;
+    order.reserve(getLeafCount());
+    for (PCNode *l : currentLeafOrder()) {
+        order.push_back(mapping[getIncidentEdgeForLeaf(l)]);
+    }
+    if (!pc.isValidOrder(order))
+        return false;
+
+#ifdef OGDF_HEAVY_DEBUG
+    generateLeafForIncidentEdgeMapping(mapping);
+    order.clear();
+    for (PCNode *l : pc.currentLeafOrder()) {
+        order.push_back(mapping[pc.getIncidentEdgeForLeaf(l)]);
+    }
+    OGDF_HEAVY_ASSERT(isValidOrder(order));
+#endif
+
+    return true;
+}
+
+std::function<void(std::ostream &os, pc_tree::PCNode *, int)> NodePCRotation::uidPrinter() const {
+    return [&](std::ostream &os, pc_tree::PCNode *n, int i) -> void {
+      if (n->isLeaf()) {
+          os << getIncidentEdgeForLeaf(n)->index();
+      } else if (getGraphNodeForInnerNode(n) != nullptr) {
+          os << getGraphNodeForInnerNode(n)->index();
+      } else {
+          os << n->getNodeType();
+      }
+    };
+}
+
+std::function<bool(pc_tree::PCNode *, pc_tree::PCNode *)> NodePCRotation::uidComparer() const {
+    return [&](pc_tree::PCNode *a, pc_tree::PCNode *b) -> bool {
+      if (a->isLeaf() && b->isLeaf()) {
+          return getIncidentEdgeForLeaf(a)->index() < getIncidentEdgeForLeaf(b)->index();
+      } else if (a->isLeaf()) {
+          return true;
+      } else if (b->isLeaf()) {
+          return false;
+      }
+
+      node ia = getGraphNodeForInnerNode(a);
+      node ib = getGraphNodeForInnerNode(b);
+      if (ia != nullptr && ib != nullptr) {
+          return ia->index() < ib->index();
+      } else if (ia != nullptr) {
+          return true;
+      } else if (ib != nullptr) {
+          return false;
+      }
+
+      if (a->getDegree() < b->getDegree()) {
+          return true;
+      } else if (a->getDegree() > b->getDegree()) {
+          return false;
+      } else {
+          return true; // can't compare C-nodes of same degree easily...
+      }
+    };
 }

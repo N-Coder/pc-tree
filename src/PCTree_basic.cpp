@@ -304,7 +304,7 @@ template
 class pc_tree::PCTreeRegistry<PCNode *>;
 
 
-bool PCTree::isValidOrder(std::vector<PCNode *> &order) const {
+bool PCTree::isValidOrder(const std::vector<PCNode *> &order) const {
     OGDF_ASSERT(order.size() == leaves.size());
     PCTreeNodeArray<PCNode *> leafMapping(*this);
     PCTree copy(*this, leafMapping);

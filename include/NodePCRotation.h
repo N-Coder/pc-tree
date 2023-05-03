@@ -7,17 +7,19 @@ namespace pc_tree {
     using namespace ogdf;
 
     class NodePCRotation : public PCTree {
-        Graph *m_G;
+    protected:
+        const Graph *m_G;
         node m_n;
 
         PCTreeNodeArray <edge> incidentEdgeForLeaf;
         PCTreeNodeArray <node> graphNodeForInnerNode;
         PCTreeNodeArray <List<edge>> bundleEdgesForLeaf;
+        NodePCRotation() : m_G(nullptr), m_n(nullptr) {}
 
     public:
-        explicit NodePCRotation(Graph &G, node n, bool mapBundleEdges = true);
+        explicit NodePCRotation(const Graph &G, node n, bool mapBundleEdges = true);
 
-        static node getTrivialPartnerPole(Graph &G, node n);
+        static node getTrivialPartnerPole(const Graph &G, node n);
 
         node getTrivialPartnerPole() const;
 
@@ -29,6 +31,14 @@ namespace pc_tree {
 
         edge getIncidentEdgeForLeaf(PCNode *n) const {
             return incidentEdgeForLeaf[n];
+        }
+
+        /*
+         * This is needed so that PQPlanarity::propagatePQ can fix its mapping when propagating into an adjacent cut.
+         * TODO replace by better interface
+         */
+        void setIncidentEdgeForLeaf(PCNode *n, edge e) {
+            incidentEdgeForLeaf[n] = e;
         }
 
         void generateInnerNodeForGraphNodeMapping(NodeArray<PCNode *> &mapping) const {
@@ -52,16 +62,24 @@ namespace pc_tree {
         }
 
         bool knowsPartnerEdges() const {
+            if (bundleEdgesForLeaf.registeredAt() == nullptr)
+                return false;
+            else
             return *bundleEdgesForLeaf.registeredAt() == this;
         }
 
-        Graph *getGraph() const {
+        const Graph *getGraph() const {
             return m_G;
         }
 
         node getNode() const {
             return m_n;
         }
+        bool isEqual(const NodePCRotation &pc) const;
+
+        std::function<void(std::ostream &os, PCNode *, int)> uidPrinter() const;
+
+        std::function<bool(PCNode *, PCNode *)> uidComparer() const;
     };
 
     struct GraphNotPlanarException : public std::exception {
