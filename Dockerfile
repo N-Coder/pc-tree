@@ -31,6 +31,7 @@ RUN git clone https://github.com/N-Coder/pc-tree.git pc-tree \
     && cd pc-tree/ \
     && git submodule update --init --recursive
 
+WORKDIR /root/pc-tree
 RUN pip install --no-cache-dir -r requirements.txt
 
 RUN dd if=/dev/urandom bs=1 count=1024 > /etc/munge/munge.key \

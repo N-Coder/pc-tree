@@ -194,8 +194,8 @@ The following commands (i.e. `evaluation.py batch-*` and the `plots/`) require S
 To generate a small test data set that can be used to roughly reproduce our results within a few hours:
 ```shell
 # in /root/pc-tree/evaluation
-mkdir out/graphs2n
-mkdir out/graphs3n
+mkdir -p out/graphs2n
+mkdir -p out/graphs3n
 for i in {100000..1000000..200000}; do ../build-release/make_graphs $i $((2*i)) 1 1 1 out/graphs2n; done
 for i in {100000..1000000..200000}; do ../build-release/make_graphs $i $((3*i)) 1 1 1 out/graphs3n; done
 python3 evaluation.py batch-make-restrictions --nodes-to=15000 --nodes-step=2000 --planar
