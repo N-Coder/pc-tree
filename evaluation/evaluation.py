@@ -227,13 +227,13 @@ def test_restrictions(ttypes, all, infiles):
         def parse_jsons():
             if ttype in ("Zanetti", "JGraphEd", "GraphTea"):
                 cmd = test_commands[ttype]("-n", ttype, all_restrictions, infiles)
-                for l in cmd:
+                for l in cmd.splitlines():
                     j = json.loads(l)
                     yield pymongo.ReplaceOne({"id": j["id"]}, j, upsert=True)
             else:
                 for file in infiles:
                     cmd = test_commands[ttype]("-n", ttype, all_restrictions, file)
-                    for l in cmd:
+                    for l in cmd.splitlines():
                         j = json.loads(l)
                         yield pymongo.ReplaceOne({"id": j["id"]}, j, upsert=True)
 

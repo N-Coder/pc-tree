@@ -492,7 +492,7 @@ for impl in IMPLS_ASC_FASTEST:
         continue
     df_merged = pd.merge(df_merged, dfs[impl], on=["parent_id", "idx", "full_leaves", "tp_length"])
     df_merged[f"speedup.%s/OGDF" % impl] = df_merged["total_time_y"] / df_merged["total_time_x"]
-    df_merged = df_merged.drop("total_time_y", 1)
+    df_merged = df_merged.drop("total_time_y", axis=1)
     df_merged = df_merged.rename(columns={"total_time_x": "total_time"})
 
 make_speedupplot(
