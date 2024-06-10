@@ -1,9 +1,0 @@
-[submodule "libraries/bandit"]
-	path = libraries/bandit
-	url = https://github.com/banditcpp/bandit.git
-[submodule "libraries/hsuPC"]
-	path = libraries/hsuPC
-	url = https://github.com/N-Coder/pc-tree.git
-[submodule "libraries/bigint-repo"]
-	path = libraries/bigint-repo
-	url = https://github.com/kasparsklavins/bigint.git
