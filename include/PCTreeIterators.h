@@ -1,191 +1,216 @@
+/** \file
+ * \brief Utils for PCTree::allNodes(), PCTree::innerNodes(), PCNode::children() and PCNode::neighbors().
+ *
+ * \author Simon D. Fink <ogdf@niko.fink.bayern>
+ *
+ * \par License:
+ * This file is part of the Open Graph Drawing Framework (OGDF).
+ *
+ * \par
+ * Copyright (C)<br>
+ * See README.md in the OGDF root directory for details.
+ *
+ * \par
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * Version 2 or 3 as published by the Free Software Foundation;
+ * see the file LICENSE.txt included in the packaging of this file
+ * for details.
+ *
+ * \par
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * \par
+ * You should have received a copy of the GNU General Public
+ * License along with this program; if not, see
+ * http://www.gnu.org/copyleft/gpl.html
+ */
+
 #pragma once
 
-#include "PCNode.h"
-#include "PCEnum.h"
+#include <ogdf/basic/pctree/PCEnum.h>
+#include <ogdf/basic/pctree/PCNode.h>
 
-#include <stack>
+#include <deque>
 #include <utility>
-#include <queue>
 
-namespace pc_tree {
-    class PCNodeIterator {
-        friend struct PCNodeChildrenIterable;
-        friend struct PCNodeNeighborsIterable;
+namespace ogdf::pc_tree {
+class OGDF_EXPORT PCNodeIterator {
+	friend struct PCNodeChildrenIterable;
+	friend struct PCNodeNeighborsIterable;
 
-        PCNode *const node = nullptr;
-        PCNode *pred = nullptr;
-        PCNode *curr = nullptr;
+	PCNode* m_node = nullptr;
+	PCNode* m_pred = nullptr;
+	PCNode* m_curr = nullptr;
 
-        PCNodeIterator(PCNode *node, PCNode *pred, PCNode *curr)
-                : node(node), pred(pred), curr(curr) {}
+	PCNodeIterator(PCNode* node, PCNode* pred, PCNode* curr)
+		: m_node(node), m_pred(pred), m_curr(curr) { }
 
-    public:
-        using iterator_category = std::forward_iterator_tag;
-        using value_type = PCNode;
-        using pointer = PCNode *;
-        using reference = PCNode &;
-        using difference_type = std::ptrdiff_t;
+public:
+	using iterator_category = std::forward_iterator_tag;
+	using value_type = PCNode;
+	using pointer = PCNode*;
+	using reference = PCNode&;
+	using difference_type = std::ptrdiff_t;
 
-        PCNodeIterator() = default;
+	PCNodeIterator() = default;
 
-        PCNode &operator->() const {
-            return *curr;
-        }
+	PCNode& operator->() const { return *m_curr; }
 
-        PCNode *operator*() const {
-            return curr;
-        }
+	PCNode* operator*() const { return m_curr; }
 
-        //! Increment operator (prefix, returns result).
-        PCNodeIterator &operator++();
+	//! Increment operator (prefix, returns result).
+	PCNodeIterator& operator++();
 
-        //! Increment operator (postfix, returns previous value).
-        PCNodeIterator operator++(int);
+	//! Increment operator (postfix, returns previous value).
+	PCNodeIterator operator++(int);
 
-        bool operator==(const PCNodeIterator &rhs) const {
-            return node == rhs.node &&
-                   pred == rhs.pred &&
-                   curr == rhs.curr;
-        }
+	bool operator==(const PCNodeIterator& rhs) const {
+		return m_node == rhs.m_node && m_pred == rhs.m_pred && m_curr == rhs.m_curr;
+	}
 
-        bool operator!=(const PCNodeIterator &rhs) const {
-            return !(rhs == *this);
-        }
+	bool operator!=(const PCNodeIterator& rhs) const { return !(rhs == *this); }
 
-        PCNode *nodeOf() const {
-            return node;
-        }
+	PCNode* nodeOf() const { return m_node; }
 
-        bool isParent();
-    };
+	bool isParent();
+};
 
-    struct PCNodeChildrenIterable {
-        PCNode *const node;
+struct OGDF_EXPORT PCNodeChildrenIterable {
+	PCNode* const m_node;
 
-        explicit PCNodeChildrenIterable(PCNode *node) : node(node) {}
+	explicit PCNodeChildrenIterable(PCNode* node) : m_node(node) { }
 
-        PCNodeIterator begin() const noexcept;
+	PCNodeIterator begin() const noexcept;
 
-        PCNodeIterator end() const noexcept;
+	PCNodeIterator end() const noexcept;
 
-        unsigned long count() const;
-    };
+	unsigned long count() const;
+};
 
-    struct PCNodeNeighborsIterable {
-        PCNode *const node;
-        PCNode *const first;
+struct OGDF_EXPORT PCNodeNeighborsIterable {
+	PCNode* const m_node;
+	PCNode* const m_first;
 
-        explicit PCNodeNeighborsIterable(PCNode *node, PCNode *first = nullptr) :
-                node(node),
-                first(first != nullptr ? first : (node->child1 != nullptr ? node->child1 : node->getParent())) {
-            if (this->first == nullptr) {
-                OGDF_ASSERT(this->node->getDegree() == 0);
-            } else {
-                OGDF_ASSERT(this->node->isParentOf(this->first) || this->first->isParentOf(this->node));
-            }
-        }
+	explicit PCNodeNeighborsIterable(PCNode* node, PCNode* first = nullptr)
+		: m_node(node)
+		, m_first(first != nullptr
+						  ? first
+						  : (node->m_child1 != nullptr ? node->m_child1 : node->getParent())) {
+		if (this->m_first == nullptr) {
+			OGDF_ASSERT(this->m_node->getDegree() == 0);
+		} else {
+			OGDF_ASSERT(this->m_node->isParentOf(this->m_first)
+					|| this->m_first->isParentOf(this->m_node));
+		}
+	}
 
-        PCNodeIterator begin() const noexcept;
+	PCNodeIterator begin() const noexcept;
 
-        PCNodeIterator end() const noexcept;
+	PCNodeIterator end() const noexcept;
 
-        unsigned long count() const;
-    };
+	unsigned long count() const;
+};
 
-    template<bool dfs>
-    class FilteringPCTreeWalk : public std::iterator<std::input_iterator_tag, PCNode *> {
-        using container_type = typename std::conditional<dfs, std::stack<PCNode *>, std::queue<PCNode *>>::type;
+/**
+ * A DFS or BFS through a PCTree.
+ * @sa FilteringBFS
+ */
+template<bool dfs, bool reverse = false>
+class FilteringPCTreeWalk {
+	using container_type =
+			typename std::conditional<dfs, std::vector<PCNode*>, std::deque<PCNode*>>::type;
 
-        container_type m_pending;
-        std::function<bool(PCNode * )> m_visit;
-        std::function<bool(PCNode * )> m_descend;
+	container_type m_pending;
+	std::function<bool(PCNode*)> m_visit;
+	std::function<bool(PCNode*)> m_descend;
 
-    public:
-        static bool return_true(PCNode *n) { return true; }
+public:
+	// iterator traits
+	using iterator_category = std::input_iterator_tag;
+	using value_type = PCNode*;
+	using difference_type = std::ptrdiff_t;
+	using pointer = PCNode**;
+	using reference = PCNode*&;
 
-        explicit FilteringPCTreeWalk() = default;
+	static bool return_true([[maybe_unused]] PCNode* n) { return true; }
 
-        explicit FilteringPCTreeWalk(
-                const PCTree &T, PCNode *start,
-                std::function<bool(PCNode * )> visit = return_true,
-                std::function<bool(PCNode * )> descend_from = return_true
-        ) : m_pending({start}), m_visit(std::move(visit)), m_descend(std::move(descend_from)) {
-            if (!m_pending.empty() && !m_visit(top())) {
-                next();
-            }
-        }
+	explicit FilteringPCTreeWalk() = default;
 
-        bool operator==(const FilteringPCTreeWalk &rhs) const {
-            return m_pending == rhs.m_pending;
-        }
+	explicit FilteringPCTreeWalk([[maybe_unused]] const PCTree& T, PCNode* start,
+			std::function<bool(PCNode*)> visit = return_true,
+			std::function<bool(PCNode*)> descend_from = return_true)
+		: m_pending({start}), m_visit(std::move(visit)), m_descend(std::move(descend_from)) {
+		if (!m_pending.empty() && !m_visit(top())) {
+			next();
+		}
+	}
 
-        bool operator!=(const FilteringPCTreeWalk &rhs) const {
-            return m_pending != rhs.m_pending;
-        }
+	bool operator==(const FilteringPCTreeWalk& rhs) const { return m_pending == rhs.m_pending; }
 
-        FilteringPCTreeWalk &begin() {
-            return *this;
-        }
+	bool operator!=(const FilteringPCTreeWalk& rhs) const { return m_pending != rhs.m_pending; }
 
-        FilteringPCTreeWalk end() const {
-            return FilteringPCTreeWalk();
-        }
+	FilteringPCTreeWalk& begin() { return *this; }
 
-        PCNode *top() {
-            OGDF_ASSERT(!m_pending.empty());
-            if constexpr (dfs) {
-                return m_pending.top();
-            } else {
-                return m_pending.front();
-            }
-        }
+	FilteringPCTreeWalk end() const { return FilteringPCTreeWalk(); }
 
-        PCNode *operator*() {
-            return top();
-        }
+	PCNode* top() {
+		OGDF_ASSERT(!m_pending.empty());
+		if constexpr (dfs) {
+			return m_pending.back();
+		} else {
+			return m_pending.front();
+		}
+	}
 
-        //! Increment operator (prefix, returns result).
-        FilteringPCTreeWalk &operator++() {
-            next();
-            return *this;
-        }
+	PCNode* operator*() { return top(); }
 
-        //! Increment operator (postfix, returns previous value).
-        OGDF_DEPRECATED("Calling FilteringPCTreeWalk++ will copy the array of pending nodes")
-        FilteringPCTreeWalk operator++(int) {
-            FilteringPCTreeWalk before = *this;
-            next();
-            return before;
-        }
+	//! Increment operator (prefix, returns result).
+	FilteringPCTreeWalk& operator++() {
+		next();
+		return *this;
+	}
 
-        void next() {
-            do {
-                OGDF_ASSERT(!m_pending.empty());
-                PCNode *node = top();
-                m_pending.pop();
-                if (m_descend(node))
-                    for (PCNode *neigh: node->children())
-                        m_pending.push(neigh);
-            } while (!m_pending.empty() && !m_visit(top()));
-        }
+	//! Increment operator (postfix, returns previous value).
+	OGDF_DEPRECATED("Calling FilteringPCTreeWalk++ will copy the array of pending nodes")
 
-        explicit operator bool() const {
-            return valid();
-        }
+	FilteringPCTreeWalk operator++(int) {
+		FilteringPCTreeWalk before = *this;
+		next();
+		return before;
+	}
 
-        bool valid() const {
-            return !m_pending.empty();
-        }
+	void next() {
+		do {
+			OGDF_ASSERT(!m_pending.empty());
+			PCNode* node = top();
+			if constexpr (dfs) {
+				m_pending.pop_back();
+			} else {
+				m_pending.pop_front();
+			}
+			if (m_descend(node)) {
+				std::copy(node->children().begin(), node->children().end(),
+						std::back_inserter(m_pending));
+				if constexpr (reverse) {
+					std::reverse(m_pending.end() - node->getChildCount(), m_pending.end());
+				}
+			}
+		} while (!m_pending.empty() && !m_visit(top()));
+	}
 
-        void append(PCNode *a) {
-            m_pending.push(a);
-        }
+	explicit operator bool() const { return valid(); }
 
-        int pendingCount() const {
-            return m_pending.size();
-        }
-    };
+	bool valid() const { return !m_pending.empty(); }
 
-    using FilteringPCTreeDFS = FilteringPCTreeWalk<true>;
-    using FilteringPCTreeBFS = FilteringPCTreeWalk<false>;
+	void append(PCNode* a) { m_pending.push(a); }
+
+	int pendingCount() const { return m_pending.size(); }
+};
+
+using FilteringPCTreeDFS = FilteringPCTreeWalk<true>;
+using FilteringPCTreeBFS = FilteringPCTreeWalk<false>;
 }

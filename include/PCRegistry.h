@@ -1,45 +1,64 @@
+/** \file
+ * \brief A registry that allows labelling the nodes of a PC-tree.
+ *
+ * \author Simon D. Fink <ogdf@niko.fink.bayern>
+ *
+ * \par License:
+ * This file is part of the Open Graph Drawing Framework (OGDF).
+ *
+ * \par
+ * Copyright (C)<br>
+ * See README.md in the OGDF root directory for details.
+ *
+ * \par
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * Version 2 or 3 as published by the Free Software Foundation;
+ * see the file LICENSE.txt included in the packaging of this file
+ * for details.
+ *
+ * \par
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * \par
+ * You should have received a copy of the GNU General Public
+ * License along with this program; if not, see
+ * http://www.gnu.org/copyleft/gpl.html
+ */
+
 #pragma once
 
-#include "PCEnum.h"
-#include "utils/RegisteredArray.h"
-#include "utils/RegisteredElementSet.h"
+#include <ogdf/basic/pctree/PCEnum.h>
 
-namespace pc_tree {
-    template<class Key>
-    class PCTreeRegistry : public ogdf::RegistryBase<Key, PCTreeRegistry<Key>> {
-        PCTree *m_pTree;
-        int *m_nextKeyIndex;
+namespace ogdf::pc_tree {
+/**
+ * A registry that allows labelling the nodes of a PC-tree.
+ */
+class OGDF_EXPORT PCTreeRegistry : public ogdf::RegistryBase<PCNode*, PCTreeRegistry> {
+	PCTreeForest* m_pForest;
 
-    public:
-        PCTreeRegistry(PCTree *pcTree, int *nextKeyIndex) : m_pTree(pcTree), m_nextKeyIndex(nextKeyIndex) {}
+public:
+	PCTreeRegistry(PCTreeForest* pcTreeForest) : m_pForest(pcTreeForest) { }
 
-        bool isKeyAssociated(Key key) const override;
+	//! Returns the index of \p key.
+	static inline int keyToIndex(PCNode* key);
 
-        int keyToIndex(Key key) const override;
+	//! Returns whether \p key is associated with this registry.
+	bool isKeyAssociated(PCNode* key) const;
 
-        int keyArrayTableSize() const override {
-            return ogdf::RegistryBase<Key, PCTreeRegistry<Key>>::calculateTableSize(*m_nextKeyIndex);
-        }
+	//! Returns the maximum index of all keys managed by this registry.
+	int maxKeyIndex() const;
 
-        int maxKeyIndex() const override {
-            return (*m_nextKeyIndex) - 1;
-        }
+	//! Returns the array size currently requested by this registry.
+	int calculateArraySize(int add) const;
 
-        operator PCTree &() const {
-            return *m_pTree;
-        }
+	operator PCTreeForest&() const { return *m_pForest; }
 
-        operator PCTree *() const {
-            return m_pTree;
-        }
+	operator PCTreeForest*() const { return m_pForest; }
 
-        PCTree &getTree() const {
-            return *m_pTree;
-        }
-    };
-
-    template<typename Value>
-    using PCTreeNodeArray = ogdf::RegisteredArray<PCTreeRegistry<PCNode *>, PCNode *, Value>;
-
-    using PCTreeNodeSet = ogdf::RegisteredElementSet<PCNode *, PCTreeRegistry<PCNode *>>;
+	PCTreeForest& getForest() const { return *m_pForest; }
+};
 }
