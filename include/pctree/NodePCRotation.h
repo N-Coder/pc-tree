@@ -31,10 +31,10 @@
 
 #pragma once
 
-#include <ogdf/basic/RegisteredSet.h>
-#include <ogdf/basic/pctree/PCTree.h>
+#include <pctree/util/RegisteredSet.h>
+#include <pctree/PCTree.h>
 
-namespace ogdf::pc_tree {
+namespace pc_tree {
 /**
  * This class represents the embedding tree of a single node in a biconnected component.
  * The embedding tree is a PCTree with one leaf for each incident edge that describes all possible rotations of the

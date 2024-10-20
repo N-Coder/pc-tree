@@ -1,5 +1,5 @@
 /** \file
- * \brief Implementation for ogdf::pc_tree::PCTree construction methods
+ * \brief Implementation for pc_tree::PCTree construction methods
  *
  * \author Simon D. Fink <ogdf@niko.fink.bayern>
  *
@@ -29,13 +29,13 @@
  * http://www.gnu.org/copyleft/gpl.html
  */
 
-#include <ogdf/basic/pctree/PCNode.h>
-#include <ogdf/basic/pctree/PCTree.h>
+#include <pctree/PCNode.h>
+#include <pctree/PCTree.h>
 
 #include <regex>
 #include <stack>
 
-using namespace ogdf::pc_tree;
+using namespace pc_tree;
 
 PCTree::PCTree(int leafNum, std::vector<PCNode*>* added, PCTreeForest* forest) : PCTree(forest) {
 	OGDF_ASSERT(leafNum > 2);

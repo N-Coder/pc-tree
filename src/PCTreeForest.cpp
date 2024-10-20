@@ -1,5 +1,5 @@
 /** \file
- * \brief Implementation for ogdf::pc_tree::PCTreeForest
+ * \brief Implementation for pc_tree::PCTreeForest
  *
  * \author Simon D. Fink <ogdf@niko.fink.bayern>
  *
@@ -29,10 +29,10 @@
  * http://www.gnu.org/copyleft/gpl.html
  */
 
-#include <ogdf/basic/pctree/PCTree.h>
-#include <ogdf/basic/pctree/PCTreeForest.h>
+#include <pctree/PCTree.h>
+#include <pctree/PCTreeForest.h>
 
-using namespace ogdf::pc_tree;
+using namespace pc_tree;
 
 PCTreeForest::~PCTreeForest() {
 	clear();
@@ -78,7 +78,7 @@ bool PCTreeRegistry::isKeyAssociated(PCNode* key) const {
 }
 
 int PCTreeRegistry::calculateArraySize(int add) const {
-	return ogdf::calculateTableSize(m_pForest->m_nextNodeId + add);
+	return calculateTableSize(m_pForest->m_nextNodeId + add);
 }
 
 int PCTreeRegistry::maxKeyIndex() const { return m_pForest->m_nextNodeId - 1; }

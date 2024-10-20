@@ -1,5 +1,5 @@
 /** \file
- * \brief Implementation for ogdf::pc_tree::PCTree basic methods
+ * \brief Implementation for pc_tree::PCTree basic methods
  *
  * \author Simon D. Fink <ogdf@niko.fink.bayern>
  *
@@ -29,14 +29,14 @@
  * http://www.gnu.org/copyleft/gpl.html
  */
 
-#include <ogdf/basic/pctree/PCNode.h>
-#include <ogdf/basic/pctree/PCTree.h>
+#include <pctree/PCNode.h>
+#include <pctree/PCTree.h>
 
 #include <queue>
 #include <stack>
 #include <variant>
 
-namespace ogdf::pc_tree {
+namespace pc_tree {
 
 bool PCTree::isTrivial() const {
 	if (m_leaves.empty()) {
@@ -47,106 +47,106 @@ bool PCTree::isTrivial() const {
 			&& m_rootNode->m_childCount == m_leaves.size();
 }
 
-void PCTree::getTree(Graph& tree, GraphAttributes* g_a, PCTreeNodeArray<ogdf::node>& pc_repr,
-		ogdf::NodeArray<PCNode*>* g_repr, bool mark_full, bool show_sibs) const {
-	tree.clear();
-
-	if (m_leaves.empty()) {
-		return;
-	}
-
-	bool nodeGraphics = false, nodeLabel = false, edgeStyle = false, edgeLabel = false;
-	if (g_a != nullptr) {
-		nodeGraphics = g_a->has(GraphAttributes::nodeGraphics);
-		nodeLabel = g_a->has(GraphAttributes::nodeLabel);
-		edgeStyle = g_a->has(GraphAttributes::edgeStyle);
-		edgeLabel = g_a->has(GraphAttributes::edgeLabel);
-	}
-
-	for (PCNode* pc_node : allNodes()) {
-		ogdf::node g_node = pc_repr[pc_node] = tree.newNode();
-		if (g_repr != nullptr) {
-			(*g_repr)[g_node] = pc_node;
-		}
-
-		if (nodeGraphics) {
-			if (pc_node->m_nodeType == PCNodeType::CNode) {
-				g_a->shape(g_node) = Shape::Rhomb;
-			} else if (pc_node->m_nodeType == PCNodeType::PNode) {
-				g_a->shape(g_node) = Shape::Ellipse;
-			} else {
-				OGDF_ASSERT(pc_node->isLeaf());
-				g_a->shape(g_node) = Shape::Triangle;
-			}
-			if (mark_full) {
-				NodeLabel label = pc_node->getLabel();
-				if (label == NodeLabel::Full) {
-					g_a->fillColor(g_node) = (Color(Color::Name::Darkblue));
-				} else if (label == NodeLabel::Partial) {
-					g_a->fillColor(g_node) = (Color(Color::Name::Lightblue));
-				}
-			}
-		}
-		if (nodeLabel) {
-			g_a->label(g_node) = std::to_string(pc_node->index());
-		}
-		PCNode* parent = pc_node->getParent();
-		if (parent != nullptr) {
-			ogdf::edge e = tree.newEdge(pc_repr[parent], g_node);
-			if (edgeStyle) {
-				if (pc_node->m_parentPNode != nullptr) {
-					g_a->strokeType(e) = ogdf::StrokeType::Solid;
-				} else if (pc_node->m_parentCNodeId != UNIONFINDINDEX_EMPTY) {
-					g_a->strokeType(e) = ogdf::StrokeType::Dot;
-				} else {
-					g_a->strokeType(e) = ogdf::StrokeType::None;
-				}
-
-				if (parent->getChild1() == pc_node) {
-					g_a->strokeColor(e) = (Color(Color::Name::Red));
-				}
-				if (parent->getChild2() == pc_node) {
-					g_a->strokeColor(e) = (Color(Color::Name::Green));
-				}
-			}
-			if (edgeLabel) {
-				if (parent->getChild1() == pc_node) {
-					g_a->label(e) = "c1";
-				}
-				if (parent->getChild2() == pc_node) {
-					g_a->label(e) = "c2";
-				}
-			}
-		}
-	}
-	if (!show_sibs) {
-		return;
-	}
-	for (PCNode* pc_node : allNodes()) {
-		ogdf::node g_node = pc_repr[pc_node];
-		//        PCNode* parent = pc_node->getParent();
-		if (pc_node->getSibling1() != nullptr) {
-			ogdf::edge e = tree.newEdge(g_node, pc_repr[pc_node->getSibling1()]);
-			if (edgeStyle) {
-				g_a->strokeType(e) = ogdf::StrokeType::Dash;
-				g_a->strokeColor(e) = Color(Color::Name::Red);
-			}
-			if (edgeLabel) {
-				g_a->label(e) = "s1";
-			}
-		}
-		if (pc_node->getSibling2() != nullptr) {
-			ogdf::edge e = tree.newEdge(g_node, pc_repr[pc_node->getSibling2()]);
-			if (edgeStyle) {
-				g_a->strokeType(e) = ogdf::StrokeType::Dash;
-				g_a->strokeColor(e) = Color(Color::Name::Green);
-			}
-			if (edgeLabel) {
-				g_a->label(e) = "s2";
-			}
-		}
-	}
-}
+// void PCTree::getTree(Graph& tree, GraphAttributes* g_a, PCTreeNodeArray<ogdf::node>& pc_repr,
+// 		ogdf::NodeArray<PCNode*>* g_repr, bool mark_full, bool show_sibs) const {
+// 	tree.clear();
+//
+// 	if (m_leaves.empty()) {
+// 		return;
+// 	}
+//
+// 	bool nodeGraphics = false, nodeLabel = false, edgeStyle = false, edgeLabel = false;
+// 	if (g_a != nullptr) {
+// 		nodeGraphics = g_a->has(GraphAttributes::nodeGraphics);
+// 		nodeLabel = g_a->has(GraphAttributes::nodeLabel);
+// 		edgeStyle = g_a->has(GraphAttributes::edgeStyle);
+// 		edgeLabel = g_a->has(GraphAttributes::edgeLabel);
+// 	}
+//
+// 	for (PCNode* pc_node : allNodes()) {
+// 		ogdf::node g_node = pc_repr[pc_node] = tree.newNode();
+// 		if (g_repr != nullptr) {
+// 			(*g_repr)[g_node] = pc_node;
+// 		}
+//
+// 		if (nodeGraphics) {
+// 			if (pc_node->m_nodeType == PCNodeType::CNode) {
+// 				g_a->shape(g_node) = Shape::Rhomb;
+// 			} else if (pc_node->m_nodeType == PCNodeType::PNode) {
+// 				g_a->shape(g_node) = Shape::Ellipse;
+// 			} else {
+// 				OGDF_ASSERT(pc_node->isLeaf());
+// 				g_a->shape(g_node) = Shape::Triangle;
+// 			}
+// 			if (mark_full) {
+// 				NodeLabel label = pc_node->getLabel();
+// 				if (label == NodeLabel::Full) {
+// 					g_a->fillColor(g_node) = (Color(Color::Name::Darkblue));
+// 				} else if (label == NodeLabel::Partial) {
+// 					g_a->fillColor(g_node) = (Color(Color::Name::Lightblue));
+// 				}
+// 			}
+// 		}
+// 		if (nodeLabel) {
+// 			g_a->label(g_node) = std::to_string(pc_node->index());
+// 		}
+// 		PCNode* parent = pc_node->getParent();
+// 		if (parent != nullptr) {
+// 			ogdf::edge e = tree.newEdge(pc_repr[parent], g_node);
+// 			if (edgeStyle) {
+// 				if (pc_node->m_parentPNode != nullptr) {
+// 					g_a->strokeType(e) = ogdf::StrokeType::Solid;
+// 				} else if (pc_node->m_parentCNodeId != UNIONFINDINDEX_EMPTY) {
+// 					g_a->strokeType(e) = ogdf::StrokeType::Dot;
+// 				} else {
+// 					g_a->strokeType(e) = ogdf::StrokeType::None;
+// 				}
+//
+// 				if (parent->getChild1() == pc_node) {
+// 					g_a->strokeColor(e) = (Color(Color::Name::Red));
+// 				}
+// 				if (parent->getChild2() == pc_node) {
+// 					g_a->strokeColor(e) = (Color(Color::Name::Green));
+// 				}
+// 			}
+// 			if (edgeLabel) {
+// 				if (parent->getChild1() == pc_node) {
+// 					g_a->label(e) = "c1";
+// 				}
+// 				if (parent->getChild2() == pc_node) {
+// 					g_a->label(e) = "c2";
+// 				}
+// 			}
+// 		}
+// 	}
+// 	if (!show_sibs) {
+// 		return;
+// 	}
+// 	for (PCNode* pc_node : allNodes()) {
+// 		ogdf::node g_node = pc_repr[pc_node];
+// 		//        PCNode* parent = pc_node->getParent();
+// 		if (pc_node->getSibling1() != nullptr) {
+// 			ogdf::edge e = tree.newEdge(g_node, pc_repr[pc_node->getSibling1()]);
+// 			if (edgeStyle) {
+// 				g_a->strokeType(e) = ogdf::StrokeType::Dash;
+// 				g_a->strokeColor(e) = Color(Color::Name::Red);
+// 			}
+// 			if (edgeLabel) {
+// 				g_a->label(e) = "s1";
+// 			}
+// 		}
+// 		if (pc_node->getSibling2() != nullptr) {
+// 			ogdf::edge e = tree.newEdge(g_node, pc_repr[pc_node->getSibling2()]);
+// 			if (edgeStyle) {
+// 				g_a->strokeType(e) = ogdf::StrokeType::Dash;
+// 				g_a->strokeColor(e) = Color(Color::Name::Green);
+// 			}
+// 			if (edgeLabel) {
+// 				g_a->label(e) = "s2";
+// 			}
+// 		}
+// 	}
+// }
 
 std::ostream& operator<<(std::ostream& os, const PCTree& tree) { return os << &tree; }
 

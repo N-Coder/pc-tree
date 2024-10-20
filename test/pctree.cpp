@@ -29,17 +29,12 @@
  * http://www.gnu.org/copyleft/gpl.html
  */
 
-#include <ogdf/basic/GraphSets.h>
-#include <ogdf/basic/graph_generators.h>
-#include <ogdf/basic/pctree/NodePCRotation.h>
-#include <ogdf/basic/pctree/PCNode.h>
-#include <ogdf/basic/pctree/PCTree.h>
-#include <ogdf/fileformats/GraphIO.h>
-#include <ogdf/planarity/BoothLueker.h>
+// #include <pctree/NodePCRotation.h>
+#include <pctree/PCNode.h>
+#include <pctree/PCTree.h>
 
 #include <bandit/bandit.h>
 
-using namespace ogdf;
 using namespace pc_tree;
 using namespace snowhouse;
 using namespace bandit;
@@ -134,71 +129,6 @@ void testGeneric(PCTree& tree) {
 	testCopyCtor(tree);
 	testLeafOrder(tree);
 	testIterators(tree);
-}
-
-void testPlanarity(int nodes, int edges, int seed, bool forcePlanar) {
-	std::stringstream ss;
-	ss << "correctly determines planarity of a graph (nodes: " << nodes << ", edges: " << edges
-	   << ", seed: " << seed << ", forcePlanar: " << forcePlanar << ")";
-	it(ss.str(), [&]() {
-		Graph G;
-		setSeed(seed);
-		if (forcePlanar) {
-			randomPlanarBiconnectedGraph(G, nodes, edges);
-		} else {
-			randomBiconnectedGraph(G, nodes, edges);
-		}
-
-		bool success = true;
-		try {
-			NodePCRotation N(G, G.lastNode());
-			if (N.getLeafCount() > 2) {
-				testGeneric(N);
-			}
-		} catch (GraphNotPlanarException& e) {
-			success = false;
-		}
-
-		node last =
-				G.chooseNode([&G](node n) -> bool { return n != G.lastNode() && n->degree() > 2; });
-		if (last != nullptr) {
-			bool success2 = true;
-			try {
-				NodePCRotation N(G, last);
-				testGeneric(N);
-			} catch (GraphNotPlanarException& e) {
-				success2 = false;
-			}
-			AssertThat(success2, Equals(success));
-		}
-
-		if (forcePlanar) {
-			AssertThat(success, IsTrue());
-		} else {
-			BoothLueker BL;
-			AssertThat(success, Equals(BL.isPlanar(G)));
-		}
-	});
-}
-
-void testPlanarity() {
-	std::list<std::function<int(int)>> edgeFuncs {[](int nodes) { return nodes; },
-			[](int nodes) { return 2 * nodes; }, [](int nodes) { return 3 * nodes - 6; }};
-	std::vector<int> seeds;
-	for (int i = 0; i < 5; i++) {
-		seeds.push_back(i);
-		seeds.push_back((int)randomSeed());
-	}
-
-	for (int nodes = 10; nodes <= 100; nodes += 10) {
-		for (auto& func : edgeFuncs) {
-			for (int seed : seeds) {
-				testPlanarity(nodes, func(nodes), seed, true);
-				testPlanarity(nodes, func(nodes), seed, false);
-			}
-		}
-	}
-	testPlanarity(20, 40, 1705935965, true);
 }
 
 bool applyRestrictions(PCTree& t, std::initializer_list<std::initializer_list<int>> restrictions) {
@@ -476,47 +406,45 @@ go_bandit([]() {
 		});
 	});
 
-	describe("NodePCRotation", []() {
-		testPlanarity();
-
-		it("computes bundle edges correctly", []() {
-			Graph G12;
-			auto a1 = G12.newNode(1);
-			auto a2 = G12.newNode(2);
-			auto a3 = G12.newNode(3);
-			auto a4 = G12.newNode(4);
-			auto a5 = G12.newNode(5);
-			auto a6 = G12.newNode(6);
-			auto a7 = G12.newNode(7);
-			auto a8 = G12.newNode(8);
-			auto a9 = G12.newNode(9);
-			G12.newEdge(a1, a9);
-			G12.newEdge(a1, a2);
-			G12.newEdge(a2, a9);
-			G12.newEdge(a2, a3);
-			G12.newEdge(a3, a4);
-			G12.newEdge(a4, a5);
-			G12.newEdge(a5, a6);
-			G12.newEdge(a5, a7);
-			G12.newEdge(a6, a8);
-			G12.newEdge(a7, a8);
-			G12.newEdge(a8, a9);
-
-			NodePCRotation test12(G12, a9, true);
-			node partner = test12.getTrivialPartnerPole();
-			AssertThat(partner != nullptr, IsTrue());
-			EdgeSet adjEntries(G12);
-			for (auto leaf : test12.getLeaves()) {
-				AssertThat(test12.getPartnerEdgesForLeaf(leaf).empty(), IsFalse());
-				for (edge twinEdge : test12.getPartnerEdgesForLeaf(leaf)) {
-					adjEntries.insert(twinEdge);
-				}
-			}
-
-			AssertThat(adjEntries.size(), Equals(partner->degree()));
-			for (edge e : adjEntries.elements()) {
-				AssertThat(e->isIncident(partner), IsTrue());
-			}
-		});
-	});
+	// describe("NodePCRotation", []() {
+	// 	it("computes bundle edges correctly", []() {
+	// 		Graph G12;
+	// 		auto a1 = G12.newNode(1);
+	// 		auto a2 = G12.newNode(2);
+	// 		auto a3 = G12.newNode(3);
+	// 		auto a4 = G12.newNode(4);
+	// 		auto a5 = G12.newNode(5);
+	// 		auto a6 = G12.newNode(6);
+	// 		auto a7 = G12.newNode(7);
+	// 		auto a8 = G12.newNode(8);
+	// 		auto a9 = G12.newNode(9);
+	// 		G12.newEdge(a1, a9);
+	// 		G12.newEdge(a1, a2);
+	// 		G12.newEdge(a2, a9);
+	// 		G12.newEdge(a2, a3);
+	// 		G12.newEdge(a3, a4);
+	// 		G12.newEdge(a4, a5);
+	// 		G12.newEdge(a5, a6);
+	// 		G12.newEdge(a5, a7);
+	// 		G12.newEdge(a6, a8);
+	// 		G12.newEdge(a7, a8);
+	// 		G12.newEdge(a8, a9);
+	//
+	// 		NodePCRotation test12(G12, a9, true);
+	// 		node partner = test12.getTrivialPartnerPole();
+	// 		AssertThat(partner != nullptr, IsTrue());
+	// 		EdgeSet adjEntries(G12);
+	// 		for (auto leaf : test12.getLeaves()) {
+	// 			AssertThat(test12.getPartnerEdgesForLeaf(leaf).empty(), IsFalse());
+	// 			for (edge twinEdge : test12.getPartnerEdgesForLeaf(leaf)) {
+	// 				adjEntries.insert(twinEdge);
+	// 			}
+	// 		}
+	//
+	// 		AssertThat(adjEntries.size(), Equals(partner->degree()));
+	// 		for (edge e : adjEntries.elements()) {
+	// 			AssertThat(e->isIncident(partner), IsTrue());
+	// 		}
+	// 	});
+	// });
 });

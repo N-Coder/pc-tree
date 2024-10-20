@@ -31,21 +31,20 @@
 
 #pragma once
 
-#include <ogdf/basic/Graph.h>
-#include <ogdf/basic/GraphAttributes.h>
-#include <ogdf/basic/pctree/PCEnum.h>
-#include <ogdf/basic/pctree/PCNode.h>
-#include <ogdf/basic/pctree/PCRegistry.h>
-#include <ogdf/basic/pctree/PCTreeForest.h>
-#include <ogdf/basic/pctree/PCTreeIterators.h>
-#include <ogdf/basic/pctree/util/IntrusiveList.h>
+#include <pctree/PCEnum.h>
+#include <pctree/PCNode.h>
+#include <pctree/PCRegistry.h>
+#include <pctree/PCTreeForest.h>
+#include <pctree/PCTreeIterators.h>
+#include <pctree/util/IntrusiveList.h>
 
 #include <deque>
+#include <functional>
 #include <list>
 #include <sstream>
 #include <vector>
 
-namespace ogdf::pc_tree {
+namespace pc_tree {
 /**
  * @return \c true if calling PCTree::makeConsecutive() with \p restSize out of \p leafCount total leaves never requires changes to the tree.
  *   This is the case for \p restSize values 0, 1, \p leafCount - 1, and \p leafCount.
@@ -107,8 +106,8 @@ OGDF_EXPORT bool compareNodesByID(PCNode* a, PCNode* b);
  * \remark Simon D. Fink. 2024. Constrained Planarity Algorithms in Theory and Practice. Doctoral Thesis, University of Passau. https://doi.org/10.15475/cpatp.2024
  */
 class OGDF_EXPORT PCTree {
-	friend OGDF_EXPORT std::ostream&(operator<<)(std::ostream&, const ogdf::pc_tree::PCTree*);
-	friend OGDF_EXPORT std::ostream&(operator<<)(std::ostream&, const ogdf::pc_tree::PCNode*);
+	friend OGDF_EXPORT std::ostream&(operator<<)(std::ostream&, const pc_tree::PCTree*);
+	friend OGDF_EXPORT std::ostream&(operator<<)(std::ostream&, const pc_tree::PCNode*);
 
 	friend class PCNode;
 	friend class PCTreeRegistry;
@@ -320,7 +319,7 @@ public:
 	/**
 	 * @return \c true if calling makeConsecutive() with \p size leaves never requires changes to the tree.
 	 *   This is the case for \p size values 0, 1, getLeafCount() - 1, and getLeafCount().
-	 * @sa ogdf::pc_tree::isTrivialRestriction()
+	 * @sa pc_tree::isTrivialRestriction()
 	 */
 	bool isTrivialRestriction(int size) const;
 
@@ -548,9 +547,9 @@ public:
 	bool isValidOrder(const std::vector<PCNode*>& order) const;
 
 	//! Get a graphical representation of this tree as Graph.
-	void getTree(ogdf::Graph& tree, ogdf::GraphAttributes* g_a,
-			PCTreeNodeArray<ogdf::node>& pc_repr, ogdf::NodeArray<PCNode*>* g_repr = nullptr,
-			bool mark_full = false, bool show_sibs = false) const;
+//	void getTree(ogdf::Graph& tree, ogdf::GraphAttributes* g_a,
+//			PCTreeNodeArray<ogdf::node>& pc_repr, ogdf::NodeArray<PCNode*>* g_repr = nullptr,
+//			bool mark_full = false, bool show_sibs = false) const;
 
 	/**
 	 * Get a list of all cyclic restrictions used to generate this tree.
@@ -567,7 +566,7 @@ public:
 			if (node->getNodeType() == PCNodeType::CNode) {
 				orders *= 2;
 			} else {
-				R children(node->getChildCount());
+				int children(node->getChildCount()); // FIXME return type
 				if (node == m_rootNode) {
 					children -= 1; // don't count circular shifts
 				}
@@ -580,7 +579,7 @@ public:
 	/**
 	 * Print a deterministic and unique representation of this PCTree to \p os.
 	 * Unique node IDs and a deterministic order of nodes' children is generated using \p printNode and \p compareNodes, respectively.
-	 * @sa ogdf::pc_tree::uid_utils
+	 * @sa pc_tree::uid_utils
 	 */
 	std::ostream& uniqueID(std::ostream& os,
 			const std::function<void(std::ostream& os, PCNode*, int)>& printNode = uid_utils::nodeToID,
@@ -619,7 +618,7 @@ public:
 		}
 	};
 
-	using FullLeafIter = std::function<std::function<PCNode*()>()>;
+	using FullLeafIter = std::function<std::function<PCNode *()>()>;
 
 	//! Interface for Observers that can be notified of all changes made to the tree during an update.
 	struct Observer {

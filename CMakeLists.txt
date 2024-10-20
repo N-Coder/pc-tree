@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 project(PCTree)
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(PROJECT_VERSION 0.0.1)
 include(GNUInstallDirs)
 
@@ -16,53 +16,25 @@ endif ()
 
 
 set(SOURCE_FILES
-        src/master.cpp
-        src/NodePCRotation.cpp
+#        src/NodePCRotation.cpp
         src/PCNode.cpp
         src/PCTree_basic.cpp
         src/PCTree_construction.cpp
         src/PCTree_intersect.cpp
         src/PCTree_restriction.cpp
+        src/PCTreeForest.cpp
 )
 
 function(make_pc_target TARGET)
-    target_include_directories(${TARGET} PUBLIC "include")
+    target_include_directories(${TARGET} PUBLIC "include" "libraries/bandit" "libraries/bigint/src")
     target_compile_options(${TARGET} PRIVATE "-w") # "-Werror=uninitialized" "-Wall"
 endfunction()
 
 
-add_executable(construction ${SOURCE_FILES} src/test/construction.cpp)
-make_pc_target(construction)
-
-add_executable(restriction ${SOURCE_FILES} src/test/restriction.cpp)
-make_pc_target(restriction)
-
-add_executable(test ${SOURCE_FILES} src/test/test.cpp)
+add_executable(test ${SOURCE_FILES} test/pctree.cpp test/bandit_main.cpp)
 make_pc_target(test)
-
-add_executable(intersection ${SOURCE_FILES} src/test/intersection.cpp)
-make_pc_target(intersection)
-
-add_executable(make_restrictions_planarity ${SOURCE_FILES} src/exec/make_restrictions_planarity.cpp)
-make_pc_target(make_restrictions_planarity)
-
-add_executable(make_restrictions_tree ${SOURCE_FILES} src/exec/make_restrictions_tree.cpp)
-make_pc_target(make_restrictions_tree)
-
-add_executable(make_restrictions_matrix ${SOURCE_FILES} src/exec/make_restrictions_matrix.cpp)
-make_pc_target(make_restrictions_matrix)
-
-add_executable(make_graphs ${SOURCE_FILES} src/exec/make_graphs.cpp)
-make_pc_target(make_graphs)
-
-add_executable(test_planarity ${SOURCE_FILES} src/exec/test_planarity.cpp)
-make_pc_target(test_planarity)
-
-add_executable(test_planarity_performance ${SOURCE_FILES} src/exec/test_planarity_performance.cpp)
-make_pc_target(test_planarity_performance)
-
-add_executable(test_restrictions ${SOURCE_FILES} src/exec/test_restrictions.cpp)
-make_pc_target(test_restrictions)
+add_executable(test-auto ${SOURCE_FILES} test/pctree-auto.cpp test/bandit_main.cpp libraries/bigint/src/bigint.cpp)
+make_pc_target(test-auto)
 
 # Installation
 # see https://stackoverflow.com/a/49863065

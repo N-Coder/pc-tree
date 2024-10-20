@@ -29,24 +29,33 @@
  * http://www.gnu.org/copyleft/gpl.html
  */
 
-#include <ogdf/basic/basic.h>
-#include <ogdf/basic/pctree/PCNode.h>
-#include <ogdf/basic/pctree/PCTree.h>
-#include <ogdf/fileformats/GraphIO.h>
-#include <ogdf/misclayout/CircularLayout.h>
-#include <ogdf/tree/TreeLayout.h>
+#include <pctree/PCNode.h>
+#include <pctree/PCTree.h>
 
 #include <memory>
 #include <ostream>
-
+#include <random>
+#include <bigint.h>
 #include <bandit/bandit.h>
 
-using namespace ogdf;
-using namespace ogdf::pc_tree;
+#define BigInt Bigint
+using namespace pc_tree;
 using namespace snowhouse;
 using namespace bandit;
 
-#define BigInt size_t
+using Dodecahedron::Bigint;
+
+
+
+static std::mt19937 s_random;
+
+void setSeed(int val) { s_random.seed(val); }
+
+int randomNumber(int low, int high) {
+    OGDF_ASSERT(low <= high);
+    std::uniform_int_distribution<> dist(low, high);
+    return dist(s_random);
+}
 
 struct CentralNode {
 	NodeLabel m_parentLabel; // partial is interpreted as nullptr
@@ -237,22 +246,22 @@ struct CreateCentralNode {
 		AssertThat(tree.makeConsecutive(copyRestriction), IsTrue());
 	}
 
-	void dump(const std::string& name) {
-		Graph G;
-		GraphAttributes GA(G, GraphAttributes::all);
-
-		PCTreeNodeArray<ogdf::node> pc_repr(*T, nullptr);
-		T->getTree(G, &GA, pc_repr, nullptr, true); // include previous labelling
-
-		CircularLayout cl;
-		cl.call(GA);
-		GraphIO::write(GA, name + "-cl.svg");
-
-		TreeLayout tl;
-		G.reverseAllEdges();
-		tl.call(GA);
-		GraphIO::write(GA, name + "-tl.svg");
-	}
+//	void dump(const std::string& name) {
+//		Graph G;
+//		GraphAttributes GA(G, GraphAttributes::all);
+//
+//		PCTreeNodeArray<ogdf::node> pc_repr(*T, nullptr);
+//		T->getTree(G, &GA, pc_repr, nullptr, true); // include previous labelling
+//
+//		CircularLayout cl;
+//		cl.call(GA);
+//		GraphIO::write(GA, name + "-cl.svg");
+//
+//		TreeLayout tl;
+//		G.reverseAllEdges();
+//		tl.call(GA);
+//		GraphIO::write(GA, name + "-tl.svg");
+//	}
 
 	void createTree() {
 		setSeed(central.m_seed);

@@ -31,17 +31,18 @@
 
 #pragma once
 
-#include <ogdf/basic/DisjointSets.h>
-#include <ogdf/basic/pctree/PCEnum.h>
-#include <ogdf/basic/pctree/PCRegistry.h>
+#include <pctree/util/DisjointSets.h>
+#include <pctree/PCEnum.h>
+#include <pctree/PCRegistry.h>
 
 #include <cstdint>
+#include <limits>
 #include <vector>
 
 #define OGDF_PCTREE_REUSE_NODES
 
-namespace ogdf::pc_tree {
-using UnionFindIndex = size_t;
+namespace pc_tree {
+using UnionFindIndex = std::size_t;
 
 const UnionFindIndex UNIONFINDINDEX_EMPTY = std::numeric_limits<UnionFindIndex>::max();
 
@@ -58,7 +59,7 @@ class OGDF_EXPORT PCTreeForest {
 private:
 	std::vector<PCTree*> m_trees;
 	std::vector<PCNode*> m_cNodes;
-	ogdf::DisjointSets<> m_parents {1 << 8};
+	DisjointSets<> m_parents {1 << 8};
 	int m_nextNodeId = 0;
 	size_t m_timestamp = 0;
 	PCTreeRegistry m_nodeArrayRegistry;

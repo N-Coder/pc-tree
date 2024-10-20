@@ -1,5 +1,5 @@
 /** \file
- * \brief Implementation for ogdf::pc_tree::PCTree intersection method
+ * \brief Implementation for pc_tree::PCTree intersection method
  *
  * \author Simon D. Fink <ogdf@niko.fink.bayern>
  *
@@ -29,11 +29,11 @@
  * http://www.gnu.org/copyleft/gpl.html
  */
 
-#include <ogdf/basic/pctree/PCTree.h>
+#include <pctree/PCTree.h>
 
 #include <queue>
 
-using namespace ogdf::pc_tree;
+using namespace pc_tree;
 
 bool PCTree::intersect(PCTree& other, PCTreeNodeArray<PCNode*>& mapping) {
 	OGDF_HEAVY_ASSERT(checkValid() && other.checkValid());

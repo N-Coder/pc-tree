@@ -31,13 +31,15 @@
 
 #pragma once
 
-#include <ogdf/basic/pctree/PCEnum.h>
-#include <ogdf/basic/pctree/PCNode.h>
+#include <algorithm>
+#include <pctree/PCEnum.h>
+#include <pctree/PCNode.h>
 
 #include <deque>
+#include <functional>
 #include <utility>
 
-namespace ogdf::pc_tree {
+namespace pc_tree {
 class OGDF_EXPORT PCNodeIterator {
 	friend struct PCNodeChildrenIterable;
 	friend struct PCNodeNeighborsIterable;
@@ -125,7 +127,7 @@ class FilteringPCTreeWalk {
 			typename std::conditional<dfs, std::vector<PCNode*>, std::deque<PCNode*>>::type;
 
 	container_type m_pending;
-	std::function<bool(PCNode*)> m_visit;
+	std::function<bool(PCNode *)> m_visit;
 	std::function<bool(PCNode*)> m_descend;
 
 public:

@@ -1,5 +1,5 @@
 /** \file
- * \brief Implementation for ogdf::pc_tree::PCTree update/restriction methods
+ * \brief Implementation for pc_tree::PCTree update/restriction methods
  *
  * \author Simon D. Fink <ogdf@niko.fink.bayern>
  *
@@ -29,8 +29,10 @@
  * http://www.gnu.org/copyleft/gpl.html
  */
 
-#include <ogdf/basic/pctree/PCNode.h>
-#include <ogdf/basic/pctree/PCTree.h>
+#include <cmath>
+#include <iostream>
+#include <pctree/PCNode.h>
+#include <pctree/PCTree.h>
 
 #include <iterator>
 #include <queue>
@@ -64,29 +66,25 @@
 #	define PC_PROFILE_EXIT(level, msg)
 #endif
 
-using namespace ogdf::pc_tree;
+using namespace pc_tree;
 
 #ifdef UFPC_DEBUG
 #	define log   \
 		if (true) \
 		std::cout
 
-#	include <ogdf/fileformats/GraphIO.h>
-#	include <ogdf/misclayout/CircularLayout.h>
-#	include <ogdf/tree/TreeLayout.h>
-
 void dump(PCTree& T, const std::string& name) {
-	Graph G;
-	GraphAttributes GA(G, GraphAttributes::all);
-	PCTreeNodeArray<ogdf::node> pc_repr(T, nullptr);
-	T.getTree(G, &GA, pc_repr, nullptr, true);
-	CircularLayout cl;
-	cl.call(GA);
-	GraphIO::write(GA, name + "-cl.svg");
-	TreeLayout tl;
-	G.reverseAllEdges();
-	tl.call(GA);
-	GraphIO::write(GA, name + "-tl.svg");
+	// Graph G;
+	// GraphAttributes GA(G, GraphAttributes::all);
+	// PCTreeNodeArray<ogdf::node> pc_repr(T, nullptr);
+	// T.getTree(G, &GA, pc_repr, nullptr, true);
+	// CircularLayout cl;
+	// cl.call(GA);
+	// GraphIO::write(GA, name + "-cl.svg");
+	// TreeLayout tl;
+	// G.reverseAllEdges();
+	// tl.call(GA);
+	// GraphIO::write(GA, name + "-tl.svg");
 }
 
 #else
@@ -99,7 +97,7 @@ void dump(PCTree& T, const std::string& name) { }
 #endif
 
 
-namespace ogdf::pc_tree {
+namespace pc_tree {
 
 bool isTrivialRestriction(int restSize, int leafCount) {
 	return restSize <= 1 || restSize >= leafCount - 1;

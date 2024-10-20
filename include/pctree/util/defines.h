@@ -1,5 +1,5 @@
 /** \file
- * \brief A registry that allows labelling the nodes of a PC-tree.
+* \brief Defines usually taken from the OGDF
  *
  * \author Simon D. Fink <ogdf@niko.fink.bayern>
  *
@@ -31,34 +31,13 @@
 
 #pragma once
 
-#include <ogdf/basic/pctree/PCEnum.h>
+#include <pctree/util/copy_move.h>
+#include <cassert>
 
-namespace ogdf::pc_tree {
-/**
- * A registry that allows labelling the nodes of a PC-tree.
- */
-class OGDF_EXPORT PCTreeRegistry : public ogdf::RegistryBase<PCNode*, PCTreeRegistry> {
-	PCTreeForest* m_pForest;
-
-public:
-	PCTreeRegistry(PCTreeForest* pcTreeForest) : m_pForest(pcTreeForest) { }
-
-	//! Returns the index of \p key.
-	static inline int keyToIndex(PCNode* key);
-
-	//! Returns whether \p key is associated with this registry.
-	bool isKeyAssociated(PCNode* key) const;
-
-	//! Returns the maximum index of all keys managed by this registry.
-	int maxKeyIndex() const;
-
-	//! Returns the array size currently requested by this registry.
-	int calculateArraySize(int add) const;
-
-	operator PCTreeForest&() const { return *m_pForest; }
-
-	operator PCTreeForest*() const { return m_pForest; }
-
-	PCTreeForest& getForest() const { return *m_pForest; }
-};
-}
+#define OGDF_EXPORT
+#define OGDF_NODISCARD
+#define OGDF_NEW_DELETE
+#define OGDF_DEBUG
+#define OGDF_ASSERT(x) assert(x)
+#define OGDF_HEAVY_ASSERT(x) assert(x)
+#define OGDF_DEPRECATED(x)

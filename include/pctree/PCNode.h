@@ -31,17 +31,15 @@
 
 #pragma once
 
-#include <ogdf/basic/basic.h>
-#include <ogdf/basic/memory.h>
-#include <ogdf/basic/pctree/PCEnum.h>
-#include <ogdf/basic/pctree/PCTreeForest.h>
-#include <ogdf/basic/pctree/util/IntrusiveList.h>
+#include <pctree/PCEnum.h>
+#include <pctree/PCTreeForest.h>
+#include <pctree/util/IntrusiveList.h>
 
 #include <array>
 #include <list>
 #include <vector>
 
-namespace ogdf::pc_tree {
+namespace pc_tree {
 struct OGDF_EXPORT PCNodeChildrenIterable;
 struct OGDF_EXPORT PCNodeNeighborsIterable;
 
@@ -56,8 +54,8 @@ struct OGDF_EXPORT PCNodeNeighborsIterable;
  * - neighbors: all children and the parent
  */
 class OGDF_EXPORT PCNode : public IntrusiveList<PCNode>::node {
-	friend OGDF_EXPORT std::ostream&(operator<<)(std::ostream&, const ogdf::pc_tree::PCTree*);
-	friend OGDF_EXPORT std::ostream&(operator<<)(std::ostream&, const ogdf::pc_tree::PCNode*);
+	friend OGDF_EXPORT std::ostream&(operator<<)(std::ostream&, const pc_tree::PCTree*);
+	friend OGDF_EXPORT std::ostream&(operator<<)(std::ostream&, const pc_tree::PCNode*);
 
 	friend class PCTree;
 	friend class PCTreeForest;

@@ -1,5 +1,5 @@
 /** \file
- * \brief Implementation for ogdf::pc_tree::PCNode
+ * \brief Implementation for pc_tree::PCNode
  *
  * \author Simon D. Fink <ogdf@niko.fink.bayern>
  *
@@ -29,12 +29,12 @@
  * http://www.gnu.org/copyleft/gpl.html
  */
 
-#include <ogdf/basic/pctree/PCNode.h>
-#include <ogdf/basic/pctree/PCTree.h>
-#include <ogdf/basic/pctree/PCTreeForest.h>
-#include <ogdf/basic/pctree/PCTreeIterators.h>
+#include <pctree/PCNode.h>
+#include <pctree/PCTree.h>
+#include <pctree/PCTreeForest.h>
+#include <pctree/PCTreeIterators.h>
 
-using namespace ogdf::pc_tree;
+using namespace pc_tree;
 
 void PCNode::appendChild(PCNode* child, bool begin) {
 	OGDF_ASSERT(child != nullptr);
@@ -249,7 +249,7 @@ void PCNode::replaceOuterChild(PCNode* oldC, PCNode* newC) {
 	}
 }
 
-void ogdf::pc_tree::proceedToNextSibling(PCNode*& pred, PCNode*& curr) {
+void pc_tree::proceedToNextSibling(PCNode*& pred, PCNode*& curr) {
 	pred = curr->getNextSibling(pred);
 	std::swap(pred, curr);
 }
@@ -512,11 +512,11 @@ void PCNode::checkTimestamp() const {
 	}
 }
 
-std::ostream& ogdf::pc_tree::operator<<(std::ostream& os, const ogdf::pc_tree::PCNode& node) {
+std::ostream& pc_tree::operator<<(std::ostream& os, const pc_tree::PCNode& node) {
 	return os << &node;
 }
 
-std::ostream& ogdf::pc_tree::operator<<(std::ostream& os, const ogdf::pc_tree::PCNode* node) {
+std::ostream& pc_tree::operator<<(std::ostream& os, const pc_tree::PCNode* node) {
 	if (node == nullptr) {
 		return os << "null-Node";
 	}

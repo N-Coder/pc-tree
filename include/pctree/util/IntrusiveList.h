@@ -1,5 +1,5 @@
 /** \file
- * \brief An intrusive list for the leaves of a PCTree. TODO should be moved to a central location; merge with GraphList?
+ * \brief An intrusive list for the leaves of a PCTree.
  *
  * \author Simon D. Fink <ogdf@niko.fink.bayern>
  *
@@ -31,12 +31,11 @@
 
 #pragma once
 
-#include <ogdf/basic/basic.h>
+#include <pctree/util/defines.h>
 
-#include <cassert>
 #include <iterator>
 
-namespace ogdf::pc_tree {
+namespace pc_tree {
 template<class T>
 class IntrusiveList {
 	T* m_first = nullptr;

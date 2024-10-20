@@ -1,5 +1,5 @@
 /** \file
- * \brief Implementation for ogdf::pc_tree::NodePCRotation
+ * \brief Implementation for pc_tree::NodePCRotation
  *
  * \author Simon D. Fink <ogdf@niko.fink.bayern>
  *
@@ -32,10 +32,10 @@
 #include <ogdf/basic/GraphSets.h>
 #include <ogdf/basic/Queue.h>
 #include <ogdf/basic/STNumbering.h>
-#include <ogdf/basic/pctree/NodePCRotation.h>
-#include <ogdf/basic/pctree/util/FilteringBFS.h>
+#include <pctree/NodePCRotation.h>
+#include <pctree/util/FilteringBFS.h>
 
-using namespace ogdf::pc_tree;
+using namespace pc_tree;
 
 NodePCRotation::NodePCRotation(const Graph& G, node end, const bool mapBundleEdges)
 	: m_G(&G)
