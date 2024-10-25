@@ -16,7 +16,6 @@ endif ()
 
 
 set(SOURCE_FILES
-#        src/NodePCRotation.cpp
         src/PCNode.cpp
         src/PCTree_basic.cpp
         src/PCTree_construction.cpp

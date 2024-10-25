@@ -107,8 +107,6 @@ bool PCTree::isTrivialRestriction(int size) const {
 	return ::isTrivialRestriction(size, getLeafCount());
 }
 
-int factorial(int n) { return (int)std::tgamma(n + 1); }
-
 void PCTree::LoggingObserver::makeConsecutiveCalled(PCTree& tree, FullLeafIter consecutiveLeaves) {
 	log << "Tree " << tree << " with consecutive leaves [";
 	auto it = consecutiveLeaves();

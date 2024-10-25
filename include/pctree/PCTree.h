@@ -31,6 +31,7 @@
 
 #pragma once
 
+#include <cmath>
 #include <pctree/PCEnum.h>
 #include <pctree/PCNode.h>
 #include <pctree/PCRegistry.h>
@@ -51,7 +52,11 @@ namespace pc_tree {
  */
 OGDF_EXPORT bool isTrivialRestriction(int restSize, int leafCount);
 
-OGDF_EXPORT int factorial(int n);
+template<typename R>
+R factorial(int n);
+
+template<>
+inline int factorial<int>(int n) { return (int) std::tgamma(n + 1); }
 
 #ifdef OGDF_DEBUG
 /**
@@ -566,11 +571,11 @@ public:
 			if (node->getNodeType() == PCNodeType::CNode) {
 				orders *= 2;
 			} else {
-				int children(node->getChildCount()); // FIXME return type
+				int children(node->getChildCount());
 				if (node == m_rootNode) {
 					children -= 1; // don't count circular shifts
 				}
-				orders *= factorial(children);
+				orders *= factorial<R>(children);
 			}
 		}
 		return orders;

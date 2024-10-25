@@ -29,7 +29,6 @@
  * http://www.gnu.org/copyleft/gpl.html
  */
 
-// #include <pctree/NodePCRotation.h>
 #include <pctree/PCNode.h>
 #include <pctree/PCTree.h>
 

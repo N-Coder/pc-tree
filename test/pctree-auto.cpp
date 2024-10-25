@@ -45,7 +45,12 @@ using namespace bandit;
 
 using Dodecahedron::Bigint;
 
-
+namespace pc_tree {
+template<>
+Bigint factorial<Bigint>(int n) {
+    return Dodecahedron::factorial(n);
+}
+}
 
 static std::mt19937 s_random;
 
@@ -353,8 +358,8 @@ struct CreateCentralNode {
 		AssertThat(type, !Equals(PCNodeType::Leaf));
 		PCNode* node = T->newNode(type);
 		if (type == PCNodeType::PNode) {
-			orders *= factorial(full);
-			orders *= factorial(empty);
+			orders *= factorial<BigInt>(full);
+			orders *= factorial<BigInt>(empty);
 		}
 		if (type == PCNodeType::CNode && partial == 0 && (full == 0 || empty == 0)) {
 			orders *= 2;
