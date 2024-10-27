@@ -33,11 +33,9 @@
 
 #include <pctree/util/defines.h>
 
-
 #include <list>
 #include <memory>
 #include <vector>
-
 
 namespace pc_tree {
 namespace internal {
@@ -58,7 +56,6 @@ inline typename std::enable_if<size != 1, T>::type nextPower2(T x) {
 }
 }
 
-
 //! Returns the smallest power of 2 that is no less than the given (integral) argument.
 template<typename T>
 inline T nextPower2(T x) {
@@ -78,9 +75,7 @@ static constexpr int MIN_TABLE_SIZE = (1 << 4);
 /**
  * @return The smallest power of 2 that is no less than \p actualCount and #MIN_TABLE_SIZE.
  */
-inline int calculateTableSize(int actualCount) {
-	return nextPower2(MIN_TABLE_SIZE, actualCount);
-}
+inline int calculateTableSize(int actualCount) { return nextPower2(MIN_TABLE_SIZE, actualCount); }
 
 //! Abstract base class for registries.
 /**

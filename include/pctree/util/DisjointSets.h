@@ -31,9 +31,9 @@
 
 #pragma once
 
-#include <algorithm>
 #include <pctree/util/defines.h>
 
+#include <algorithm>
 #include <cstring>
 
 namespace pc_tree {

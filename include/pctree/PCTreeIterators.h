@@ -31,10 +31,10 @@
 
 #pragma once
 
-#include <algorithm>
 #include <pctree/PCEnum.h>
 #include <pctree/PCNode.h>
 
+#include <algorithm>
 #include <deque>
 #include <functional>
 #include <utility>
@@ -127,7 +127,7 @@ class FilteringPCTreeWalk {
 			typename std::conditional<dfs, std::vector<PCNode*>, std::deque<PCNode*>>::type;
 
 	container_type m_pending;
-	std::function<bool(PCNode *)> m_visit;
+	std::function<bool(PCNode*)> m_visit;
 	std::function<bool(PCNode*)> m_descend;
 
 public:

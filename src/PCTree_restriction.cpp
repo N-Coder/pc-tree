@@ -29,11 +29,11 @@
  * http://www.gnu.org/copyleft/gpl.html
  */
 
-#include <cmath>
-#include <iostream>
 #include <pctree/PCNode.h>
 #include <pctree/PCTree.h>
 
+#include <cmath>
+#include <iostream>
 #include <iterator>
 #include <queue>
 #include <vector>

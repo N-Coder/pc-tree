@@ -30,8 +30,8 @@
  */
 #pragma once
 
-#include <pctree/util/defines.h>
 #include <pctree/util/RegisteredArray.h>
+#include <pctree/util/defines.h>
 
 namespace pc_tree {
 

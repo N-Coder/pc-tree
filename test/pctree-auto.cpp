@@ -35,8 +35,9 @@
 #include <memory>
 #include <ostream>
 #include <random>
-#include <bigint.h>
+
 #include <bandit/bandit.h>
+#include <bigint.h>
 
 #define BigInt Bigint
 using namespace pc_tree;
@@ -48,7 +49,7 @@ using Dodecahedron::Bigint;
 namespace pc_tree {
 template<>
 Bigint factorial<Bigint>(int n) {
-    return Dodecahedron::factorial(n);
+	return Dodecahedron::factorial(n);
 }
 }
 
@@ -57,9 +58,9 @@ static std::mt19937 s_random;
 void setSeed(int val) { s_random.seed(val); }
 
 int randomNumber(int low, int high) {
-    OGDF_ASSERT(low <= high);
-    std::uniform_int_distribution<> dist(low, high);
-    return dist(s_random);
+	OGDF_ASSERT(low <= high);
+	std::uniform_int_distribution<> dist(low, high);
+	return dist(s_random);
 }
 
 struct CentralNode {
@@ -251,22 +252,22 @@ struct CreateCentralNode {
 		AssertThat(tree.makeConsecutive(copyRestriction), IsTrue());
 	}
 
-//	void dump(const std::string& name) {
-//		Graph G;
-//		GraphAttributes GA(G, GraphAttributes::all);
-//
-//		PCTreeNodeArray<ogdf::node> pc_repr(*T, nullptr);
-//		T->getTree(G, &GA, pc_repr, nullptr, true); // include previous labelling
-//
-//		CircularLayout cl;
-//		cl.call(GA);
-//		GraphIO::write(GA, name + "-cl.svg");
-//
-//		TreeLayout tl;
-//		G.reverseAllEdges();
-//		tl.call(GA);
-//		GraphIO::write(GA, name + "-tl.svg");
-//	}
+	//	void dump(const std::string& name) {
+	//		Graph G;
+	//		GraphAttributes GA(G, GraphAttributes::all);
+	//
+	//		PCTreeNodeArray<ogdf::node> pc_repr(*T, nullptr);
+	//		T->getTree(G, &GA, pc_repr, nullptr, true); // include previous labelling
+	//
+	//		CircularLayout cl;
+	//		cl.call(GA);
+	//		GraphIO::write(GA, name + "-cl.svg");
+	//
+	//		TreeLayout tl;
+	//		G.reverseAllEdges();
+	//		tl.call(GA);
+	//		GraphIO::write(GA, name + "-tl.svg");
+	//	}
 
 	void createTree() {
 		setSeed(central.m_seed);

@@ -31,7 +31,6 @@
 
 #pragma once
 
-#include <cmath>
 #include <pctree/PCEnum.h>
 #include <pctree/PCNode.h>
 #include <pctree/PCRegistry.h>
@@ -39,6 +38,7 @@
 #include <pctree/PCTreeIterators.h>
 #include <pctree/util/IntrusiveList.h>
 
+#include <cmath>
 #include <deque>
 #include <functional>
 #include <list>
@@ -56,7 +56,9 @@ template<typename R>
 R factorial(int n);
 
 template<>
-inline int factorial<int>(int n) { return (int) std::tgamma(n + 1); }
+inline int factorial<int>(int n) {
+	return (int)std::tgamma(n + 1);
+}
 
 #ifdef OGDF_DEBUG
 /**
@@ -552,9 +554,9 @@ public:
 	bool isValidOrder(const std::vector<PCNode*>& order) const;
 
 	//! Get a graphical representation of this tree as Graph.
-//	void getTree(ogdf::Graph& tree, ogdf::GraphAttributes* g_a,
-//			PCTreeNodeArray<ogdf::node>& pc_repr, ogdf::NodeArray<PCNode*>* g_repr = nullptr,
-//			bool mark_full = false, bool show_sibs = false) const;
+	//	void getTree(ogdf::Graph& tree, ogdf::GraphAttributes* g_a,
+	//			PCTreeNodeArray<ogdf::node>& pc_repr, ogdf::NodeArray<PCNode*>* g_repr = nullptr,
+	//			bool mark_full = false, bool show_sibs = false) const;
 
 	/**
 	 * Get a list of all cyclic restrictions used to generate this tree.
@@ -623,7 +625,7 @@ public:
 		}
 	};
 
-	using FullLeafIter = std::function<std::function<PCNode *()>()>;
+	using FullLeafIter = std::function<std::function<PCNode*()>()>;
 
 	//! Interface for Observers that can be notified of all changes made to the tree during an update.
 	struct Observer {

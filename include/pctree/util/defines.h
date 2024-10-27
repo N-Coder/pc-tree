@@ -32,6 +32,7 @@
 #pragma once
 
 #include <pctree/util/copy_move.h>
+
 #include <cassert>
 
 #define OGDF_EXPORT

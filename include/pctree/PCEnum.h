@@ -31,9 +31,9 @@
 
 #pragma once
 
-#include <pctree/util/defines.h>
 #include <pctree/util/RegisteredArray.h>
 #include <pctree/util/RegisteredSet.h>
+#include <pctree/util/defines.h>
 
 #include <ostream>
 

@@ -31,9 +31,9 @@
 
 #pragma once
 
-#include <pctree/util/DisjointSets.h>
 #include <pctree/PCEnum.h>
 #include <pctree/PCRegistry.h>
+#include <pctree/util/DisjointSets.h>
 
 #include <cstdint>
 #include <limits>
