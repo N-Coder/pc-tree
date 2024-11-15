@@ -1,14 +1,9 @@
-<p align="right" width="200px">
-<img src="examples/figure.svg" width="200px"/>
-
-A PC-tree T on the set X={a,...p}.
-Small black disks are P-nodes, larger white disks are C-nodes with their up-to-reversal fixed rotation indicated.
-The red arrow indicates the currently shown cyclic order, which follows the alphabet.
-</p>
+<img src="examples/figure.svg" align="right" width="200px" title="A PC-tree T on the set X={a,...p}. Small black disks are P-nodes, larger white disks are C-nodes with their up-to-reversal fixed rotation indicated. The red arrow indicates the currently shown cyclic order, which follows the alphabet."/>
 
 # PC-Trees
 
 This is a C++ implementation of the PC-tree datastructure for representing cyclic permutations subject to some *consecutivity* constraints, that is, requiring certain sets of elements to appear uninterrupted by elements from their complement sets.
+See the image to the right and its title text for an example of a PC-tree.
 The PC-Tree was first introduced by Hsu, Shih, and McConnell \[1, 2, 3\] and this union-find based implementation was found to be the by-far fastest correct one \[4\].
 While the [same code](https://github.com/ogdf/ogdf/tree/master/src/ogdf/basic/pctree) is also [available](https://ogdf.netlify.app/classogdf_1_1pc__tree_1_1_p_c_tree.html) through the [OGDF library](https://github.com/ogdf/ogdf), 
 this stand-alone version has no dependencies and only uses [bandit](https://github.com/banditcpp/bandit) and [Dodecahedron::Bigint](https://github.com/kasparsklavins/bigint) for testing.
@@ -39,7 +34,7 @@ See the [examples folder](./examples) for more code and also an example CMake co
 Documentation can be found within the [OGDF docs](https://ogdf.netlify.app/classogdf_1_1pc__tree_1_1_p_c_tree.html).
 The library+example can be built as follows:
 ```bash
-git clone https://github.com/N-Coder/pc-tree.git
+git clone --recursive https://github.com/N-Coder/pc-tree.git
 cd pc-tree
 # build the (shared) library in debug mode
 mkdir build-debug && cd build-debug/
