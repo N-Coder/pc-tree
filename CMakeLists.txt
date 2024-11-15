@@ -1,8 +1,7 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.8)
 project(PCTree)
 set(CMAKE_CXX_STANDARD 17)
-set(PROJECT_VERSION 0.0.1)
-include(GNUInstallDirs)
+set(PROJECT_VERSION 1.0.0)
 
 message("CMAKE_BUILD_TYPE is ${CMAKE_BUILD_TYPE}")
 message("CMAKE_CXX_FLAGS_DEBUG is ${CMAKE_CXX_FLAGS_DEBUG}")
@@ -24,21 +23,16 @@ set(SOURCE_FILES
         src/PCTreeForest.cpp
 )
 
-function(make_pc_target TARGET)
-    target_include_directories(${TARGET} PUBLIC "include" "libraries/bandit" "libraries/bigint/src")
-    target_compile_options(${TARGET} PRIVATE "-w") # "-Werror=uninitialized" "-Wall"
-endfunction()
-
-
 add_executable(test ${SOURCE_FILES} test/pctree.cpp test/bandit_main.cpp)
-make_pc_target(test)
+target_include_directories(test PUBLIC "include" "libraries/bandit")
 add_executable(test-auto ${SOURCE_FILES} test/pctree-auto.cpp test/bandit_main.cpp libraries/bigint/src/bigint.cpp)
-make_pc_target(test-auto)
+target_include_directories(test-auto PUBLIC "include" "libraries/bandit" "libraries/bigint/src")
 
 # Installation
 # see https://stackoverflow.com/a/49863065
-
+include(GNUInstallDirs)
 add_library(${PROJECT_NAME} ${SOURCE_FILES})
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_${CMAKE_CXX_STANDARD})
 set_target_properties(${PROJECT_NAME} PROPERTIES
         VERSION ${PROJECT_VERSION}
         SOVERSION 1)

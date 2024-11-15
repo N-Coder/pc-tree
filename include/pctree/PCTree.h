@@ -60,6 +60,11 @@ inline int factorial<int>(int n) {
 	return (int)std::tgamma(n + 1);
 }
 
+template<>
+inline unsigned long factorial<unsigned long>(int n) {
+	return (unsigned long)std::tgamma(n + 1);
+}
+
 #ifdef OGDF_DEBUG
 /**
  * Allows controlling the frequency of full-tree consistency checks in heavy debug mode.
