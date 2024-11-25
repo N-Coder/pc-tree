@@ -359,6 +359,22 @@ go_bandit([]() {
 			testGeneric(T);
 		});
 
+		it("allows rerooting to a leaf", []() {
+			for (int i = 0; i < 7; ++i) {
+				std::vector<PCNode*> leaves;
+				PCTree T(7, &leaves);
+				PCNode* root = leaves[i];
+				T.changeRoot(root);
+				AssertThat(T.getRootNode(), Equals(root));
+				AssertThat(makeConsecutive(T, {2, 4}), IsTrue());
+				AssertThat(T.getRootNode(), Equals(root));
+				AssertThat(makeConsecutive(T, {1, 3, 4}), IsTrue());
+				AssertThat(T.getRootNode(), Equals(root));
+				AssertThat(makeConsecutive(T, {1, 2, 3, 5}), IsFalse());
+				AssertThat(T.getRootNode(), Equals(root));
+			}
+		});
+
 		it("correctly performs a simple intersection", []() {
 			PCTree T(10);
 			PCTree T2("0:(14:[15:(6, 5), 4, 3, 2, 1], 10, 9, 8, 7)");

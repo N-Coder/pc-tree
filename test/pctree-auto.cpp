@@ -305,12 +305,12 @@ struct CreateCentralNode {
 	static PCNode* moveUpRoot(PCNode* node) {
 		while (randomNumber(0, 99) < 75 && node->getChildCount() > 0) {
 			PCNode* child = node->getChild1();
-			if (child->getNodeType() == PCNodeType::Leaf) {
-				break;
-			}
 			child->detach();
 			child->appendChild(node);
 			node = child;
+			if (child->getNodeType() == PCNodeType::Leaf) {
+				break;
+			}
 		}
 		return node;
 	}
