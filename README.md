@@ -52,7 +52,9 @@ make -j 8
 ./example # will print "1 2 3 8 7"
 ```
 
-After compiling the shared library as above, the PCTree can also be used from Python thanks to the awesome [cppyy](https://github.com/wlav/cppyy) library:
+After compiling the shared library as above, the PCTree can also be used from Python thanks to the awesome [cppyy](https://github.com/wlav/cppyy) library.
+Alternatively, [ogdf-python](https://github.com/ogdf/ogdf-python) together with [ogdf-wheel](https://github.com/ogdf/ogdf-wheel)
+also provide a prebuilt Python package including the PCTree.
 
 ```python
 import cppyy
