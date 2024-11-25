@@ -53,16 +53,8 @@ namespace pc_tree {
 OGDF_EXPORT bool isTrivialRestriction(int restSize, int leafCount);
 
 template<typename R>
-R factorial(int n);
-
-template<>
-inline int factorial<int>(int n) {
-	return (int)std::tgamma(n + 1);
-}
-
-template<>
-inline unsigned long factorial<unsigned long>(int n) {
-	return (unsigned long)std::tgamma(n + 1);
+R factorial(int n) {
+	return static_cast<R>(std::tgamma(n + 1));
 }
 
 #ifdef OGDF_DEBUG
