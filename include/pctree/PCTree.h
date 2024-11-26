@@ -512,6 +512,10 @@ public:
 
 	[[nodiscard]] size_t getCNodeCount() const { return m_cNodeCount; }
 
+	[[nodiscard]] size_t getInnerNodeCount() const { return m_cNodeCount + m_pNodeCount; }
+
+	[[nodiscard]] size_t getNodeCount() const { return m_cNodeCount + m_pNodeCount + m_leaves.size(); }
+
 	[[nodiscard]] PCNode* getRootNode() const { return m_rootNode; }
 
 	/**
