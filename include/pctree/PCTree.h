@@ -514,7 +514,9 @@ public:
 
 	[[nodiscard]] size_t getInnerNodeCount() const { return m_cNodeCount + m_pNodeCount; }
 
-	[[nodiscard]] size_t getNodeCount() const { return m_cNodeCount + m_pNodeCount + m_leaves.size(); }
+	[[nodiscard]] size_t getNodeCount() const {
+		return m_cNodeCount + m_pNodeCount + m_leaves.size();
+	}
 
 	[[nodiscard]] PCNode* getRootNode() const { return m_rootNode; }
 
@@ -554,7 +556,7 @@ public:
 	//! Check whether the order \p order is represented by this tree.
 	bool isValidOrder(const std::vector<PCNode*>& order) const;
 
-	//! Get a graphical representation of this tree as Graph.
+	//  //! Get a graphical representation of this tree as Graph.
 	//	void getTree(ogdf::Graph& tree, ogdf::GraphAttributes* g_a,
 	//			PCTreeNodeArray<ogdf::node>& pc_repr, ogdf::NodeArray<PCNode*>* g_repr = nullptr,
 	//			bool mark_full = false, bool show_sibs = false) const;
@@ -583,6 +585,33 @@ public:
 		}
 		return orders;
 	}
+
+	//! Reorder all nodes' children such that currentLeafOrder() will represent a random admissible order.
+	void randomEmbedding(uint32_t seed);
+
+	//! Reorder all nodes' children such that currentLeafOrder() will represent the lexicographically first order.
+	/**
+	 * @sa std::next_permutation()
+	 * @sa PCNode::firstEmbedding()
+	 */
+	void firstEmbedding();
+
+	//! Reorder all nodes' children such that currentLeafOrder() will represent the lexicographically next order.
+	/**
+	 * To walk through all admissible leaf orders, you can use the following code:
+	 * \code
+	 * tree.firstEmbedding();
+	 * do {
+	 *     cout << tree.currentLeafOrder() << endl;
+	 * } while (tree.nextEmbedding());
+	 * \endcode
+	 *
+	 * @return true if the new permutation is lexicographically greater than the old.
+	 *		   false if the last permutation was reached and the leaf order was reset to the first permutation.
+	 * @sa std::next_permutation()
+	 * @sa PCNode::nextEmbedding()
+	 */
+	bool nextEmbedding();
 
 	/**
 	 * Print a deterministic and unique representation of this PCTree to \p os.
