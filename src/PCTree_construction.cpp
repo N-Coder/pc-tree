@@ -44,25 +44,48 @@ PCTree::PCTree(int leafNum, std::vector<PCNode*>* added, PCTreeForest* forest) :
 }
 
 PCTree::PCTree(const std::string& str, bool keep_ids, PCTreeForest* forest) : PCTree(forest) {
-	std::string s = std::regex_replace(str, std::regex("\\s+"), ""); //remove whitespaces
+	if (keep_ids) { // ensure that all IDs in the string are unique and the nextNodeId is one greater than the max of them
+		std::stringstream ss(str);
+		std::set<int> ids;
+		while (ss.good() && !ss.eof()) {
+			if (isdigit(ss.peek())) {
+				int idx;
+				ss >> idx;
+				if (!ids.insert(idx).second) {
+					throw std::invalid_argument("Invalid PC-Tree! Illegal re-use of ID "
+							+ std::to_string(idx) + " with keep_ids=true at position "
+							+ std::to_string(ss.tellg()));
+				}
+				m_forest->m_nextNodeId = std::max(m_forest->m_nextNodeId, idx + 1);
+			} else {
+				ss.ignore();
+			}
+		}
+	}
 
-	std::stringstream ss(s);
+	std::stringstream ss(str);
 	std::stack<PCNode*> stack;
-	int nextIndex = 0;
-	bool indexUsed = true;
+	int nextIndex = -1;
 	char previousChar = ' ';
 
-	while (!ss.eof()) {
+#define THROW_INVALID                                                                             \
+	throw std::invalid_argument("Invalid PC-Tree! Illegal '" + std::string(1, nextChar) + "' at " \
+			+ "position " + std::to_string(ss.tellg()) + " (parser line "                         \
+			+ std::to_string(__LINE__) + ")");
+
+	while (ss.good() && !ss.eof()) {
 		char nextChar = ss.peek();
 
-		if (isdigit(nextChar) || nextChar == '-') {
-			ss >> nextIndex;
+		if (nextChar == std::stringstream::traits_type::eof()) {
+			break;
+		} else if (isspace(nextChar)) {
+			ss.ignore();
+		} else if (isdigit(nextChar)) {
 			if (keep_ids) {
-				m_forest->m_nextNodeId = std::max(nextIndex + 1, m_forest->m_nextNodeId);
+				ss >> nextIndex;
 			} else {
-				nextIndex = m_forest->m_nextNodeId++;
+				ss.ignore();
 			}
-			indexUsed = false;
 		} else {
 			ss.ignore();
 
@@ -73,24 +96,23 @@ PCTree::PCTree(const std::string& str, bool keep_ids, PCTreeForest* forest) : PC
 			case ',':
 				if (previousChar != ']' && previousChar != ')') {
 					if (stack.empty()) {
-						throw std::invalid_argument("Invalid PC-Tree");
+						THROW_INVALID
 					}
 
 					created = newNode(PCNodeType::Leaf, parent, nextIndex);
 				}
 				break;
 			case '{':
-				if (stack.empty() && getLeafCount() > 0) {
-					throw std::invalid_argument("Invalid PC-Tree");
+				if (!stack.empty() || getLeafCount() > 0) {
+					THROW_INVALID
 				}
 
-				OGDF_ASSERT(parent == nullptr);
-				created = newNode(PCNodeType::Leaf, parent, nextIndex);
+				created = newNode(PCNodeType::Leaf, nullptr, nextIndex);
 				stack.push(created);
 				break;
 			case '[':
 				if (stack.empty() && getLeafCount() > 0) {
-					throw std::invalid_argument("Invalid PC-Tree");
+					THROW_INVALID
 				}
 
 				created = newNode(PCNodeType::CNode, parent, nextIndex);
@@ -98,7 +120,7 @@ PCTree::PCTree(const std::string& str, bool keep_ids, PCTreeForest* forest) : PC
 				break;
 			case '(':
 				if (stack.empty() && getLeafCount() > 0) {
-					throw std::invalid_argument("Invalid PC-Tree");
+					THROW_INVALID
 				}
 
 				created = newNode(PCNodeType::PNode, parent, nextIndex);
@@ -106,7 +128,7 @@ PCTree::PCTree(const std::string& str, bool keep_ids, PCTreeForest* forest) : PC
 				break;
 			case ']':
 				if (stack.empty() || stack.top()->m_nodeType != PCNodeType::CNode) {
-					throw std::invalid_argument("Invalid PC-Tree");
+					THROW_INVALID
 				}
 
 				if (previousChar != ']' && previousChar != ')') {
@@ -116,7 +138,7 @@ PCTree::PCTree(const std::string& str, bool keep_ids, PCTreeForest* forest) : PC
 				break;
 			case ')':
 				if (stack.empty() || stack.top()->m_nodeType != PCNodeType::PNode) {
-					throw std::invalid_argument("Invalid PC-Tree");
+					THROW_INVALID
 				}
 
 				if (previousChar != ']' && previousChar != ')') {
@@ -126,32 +148,32 @@ PCTree::PCTree(const std::string& str, bool keep_ids, PCTreeForest* forest) : PC
 				break;
 			case '}':
 				if (stack.empty() || stack.top()->m_nodeType != PCNodeType::Leaf) {
-					throw std::invalid_argument("Invalid PC-Tree");
+					THROW_INVALID
 				}
 
 				if (previousChar != ']' && previousChar != ')') {
 					created = newNode(PCNodeType::Leaf, parent, nextIndex);
 				}
 				stack.pop();
-				OGDF_ASSERT(stack.empty());
+
+				if (!stack.empty()) {
+					THROW_INVALID
+				}
 				break;
 			default:
-				break;
+				THROW_INVALID
 			}
 
-			if (created) {
-				if (indexUsed) {
-					throw std::invalid_argument("Invalid PC-Tree");
-				}
-				indexUsed = true;
+			if (created && nextIndex >= 0) {
+				nextIndex = -1;
 			}
-
 			previousChar = nextChar;
 		}
 	}
-	if (!stack.empty()) {
-		throw std::invalid_argument("Invalid PC-Tree");
+	if (!stack.empty() || nextIndex >= 0) {
+		throw std::invalid_argument("Invalid PC-Tree! Unexpected end of string");
 	}
+	OGDF_ASSERT(checkValid());
 }
 
 PCTree::PCTree(const PCTree& other, PCTreeNodeArray<PCNode*>& nodeMapping, bool keep_ids,
