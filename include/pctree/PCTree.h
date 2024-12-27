@@ -614,7 +614,7 @@ public:
 	bool nextEmbedding();
 
 	/**
-	 * Print a deterministic and unique representation of this PCTree to \p os.
+	 * Print a deterministic and unique representation of this PCTree to \p os that is independent of which node it is currently rooted at.
 	 * Unique node IDs and a deterministic order of nodes' children is generated using \p printNode and \p compareNodes, respectively.
 	 * @sa pc_tree::uid_utils
 	 */
@@ -624,10 +624,29 @@ public:
 
 	std::string uniqueID(
 			const std::function<void(std::ostream& os, PCNode*, int)>& printNode = uid_utils::nodeToID,
-			[[maybe_unused]] const std::function<bool(PCNode*, PCNode*)>& compareNodes =
-					uid_utils::compareNodesByID) {
+			const std::function<bool(PCNode*, PCNode*)>& compareNodes = uid_utils::compareNodesByID) {
 		std::stringstream sb;
 		uniqueID(sb, printNode, compareNodes);
+		return sb.str();
+	}
+
+	/**
+	 * Print a deterministic and unique representation of this PCTree to \p os.
+	 * The representation changes depending on which node the tree is rooted at.
+	 * Unique node IDs and a deterministic order of nodes' children is generated using \p printNode and \p compareNodes, respectively.
+	 * @sa pc_tree::uid_utils
+	 */
+	std::ostream& uniqueIDRooted(std::ostream& os,
+			const std::function<void(std::ostream& os, PCNode*, int)>& printNode = uid_utils::nodeToID,
+			const std::function<bool(PCNode*, PCNode*)>& compareNodes = uid_utils::compareNodesByID,
+			bool print_root = true);
+
+	std::string uniqueIDRooted(
+			const std::function<void(std::ostream& os, PCNode*, int)>& printNode = uid_utils::nodeToID,
+			const std::function<bool(PCNode*, PCNode*)>& compareNodes = uid_utils::compareNodesByID,
+			bool print_root = true) {
+		std::stringstream sb;
+		uniqueIDRooted(sb, printNode, compareNodes, print_root);
 		return sb.str();
 	}
 
