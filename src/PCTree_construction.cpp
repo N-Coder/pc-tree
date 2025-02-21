@@ -43,7 +43,12 @@ PCTree::PCTree(int leafNum, std::vector<PCNode*>* added, PCTreeForest* forest) :
 	insertLeaves(leafNum, m_rootNode, added);
 }
 
-PCTree::PCTree(const std::string& str, bool keep_ids, PCTreeForest* forest) : PCTree(forest) {
+PCTree::PCTree(const std::string& str, PCTreeNodeArray<std::string>* node_labels, bool keep_ids,
+		PCTreeForest* forest)
+	: PCTree(forest) {
+	if (node_labels) {
+		node_labels->init(*this);
+	}
 	if (keep_ids) { // ensure that all IDs in the string are unique and the nextNodeId is one greater than the max of them
 		std::stringstream ss(str);
 		std::set<int> ids;
@@ -63,114 +68,138 @@ PCTree::PCTree(const std::string& str, bool keep_ids, PCTreeForest* forest) : PC
 		}
 	}
 
-	std::stringstream ss(str);
 	std::stack<PCNode*> stack;
-	int nextIndex = -1;
-	char previousChar = ' ';
 
-#define THROW_INVALID                                                                             \
-	throw std::invalid_argument("Invalid PC-Tree! Illegal '" + std::string(1, nextChar) + "' at " \
-			+ "position " + std::to_string(ss.tellg()) + " (parser line "                         \
-			+ std::to_string(__LINE__) + ")");
+#define THROW_INVALID                                                                              \
+	throw std::invalid_argument("Invalid PC-Tree! Illegal '" + std::string(1, next_char) + "' at " \
+			+ "position " + std::to_string(i) + " (parser line " + std::to_string(__LINE__) + ")");
 
-	while (ss.good() && !ss.eof()) {
-		char nextChar = ss.peek();
+	int i = 0;
+	while (i < str.length()) {
+		char next_char = str[i];
 
-		if (nextChar == std::stringstream::traits_type::eof()) {
-			break;
-		} else if (isspace(nextChar)) {
-			ss.ignore();
-		} else if (isdigit(nextChar)) {
-			if (keep_ids) {
-				ss >> nextIndex;
-			} else {
-				ss.ignore();
+		if (isspace(next_char)) {
+			i++;
+			continue;
+		}
+
+		PCNode* new_node = nullptr;
+		PCNode* parent = stack.empty() ? nullptr : stack.top();
+		while (isalnum(next_char) || next_char == '_') {
+			std::string next_label;
+			while (i < str.length() && (isalnum(next_char) || next_char == '_')) {
+				next_label.push_back(next_char);
+				i++;
+				next_char = str[i];
 			}
-		} else {
-			ss.ignore();
 
-			PCNode* parent = stack.empty() ? nullptr : stack.top();
-			PCNode* created = nullptr;
+			int next_id = -1;
+			if (keep_ids) {
+				next_id = std::stoi(next_label);
+				OGDF_ASSERT(next_id >= 0); // '-' would not be alnum
+			}
 
-			switch (nextChar) {
-			case ',':
-				if (previousChar != ']' && previousChar != ')') {
-					if (stack.empty()) {
+			if (parent == nullptr && getNodeCount() > 0) {
+				throw std::invalid_argument("Invalid PC-Tree! Second node '" + next_label + "' at "
+						+ "position " + std::to_string(i) + " cannot be at top level (parser line "
+						+ std::to_string(__LINE__) + ")");
+			}
+			new_node = newNode(PCNodeType::Leaf, parent, next_id);
+			if (node_labels) {
+				(*node_labels)[new_node] = next_label;
+			}
+
+			bool delim_seen = false;
+			while (i < str.length() && (isspace(next_char) || next_char == ':' || next_char == ',')) {
+				if (!isspace(next_char)) {
+					if (delim_seen) {
 						THROW_INVALID
 					}
+					delim_seen = true;
+					if (next_char == ',') {
+						new_node = nullptr; // cannot be used for P-/C-node after comma
+					}
+				}
+				i++;
+				next_char = str[i];
+			}
+		}
 
-					created = newNode(PCNodeType::Leaf, parent, nextIndex);
-				}
-				break;
-			case '{':
-				if (!stack.empty() || getLeafCount() > 0) {
-					THROW_INVALID
-				}
-
-				created = newNode(PCNodeType::Leaf, nullptr, nextIndex);
-				stack.push(created);
-				break;
-			case '[':
-				if (stack.empty() && getLeafCount() > 0) {
-					THROW_INVALID
-				}
-
-				created = newNode(PCNodeType::CNode, parent, nextIndex);
-				stack.push(created);
-				break;
-			case '(':
-				if (stack.empty() && getLeafCount() > 0) {
-					THROW_INVALID
-				}
-
-				created = newNode(PCNodeType::PNode, parent, nextIndex);
-				stack.push(created);
-				break;
-			case ']':
-				if (stack.empty() || stack.top()->m_nodeType != PCNodeType::CNode) {
-					THROW_INVALID
-				}
-
-				if (previousChar != ']' && previousChar != ')') {
-					created = newNode(PCNodeType::Leaf, parent, nextIndex);
-				}
-				stack.pop();
-				break;
-			case ')':
-				if (stack.empty() || stack.top()->m_nodeType != PCNodeType::PNode) {
-					THROW_INVALID
-				}
-
-				if (previousChar != ']' && previousChar != ')') {
-					created = newNode(PCNodeType::Leaf, parent, nextIndex);
-				}
-				stack.pop();
-				break;
-			case '}':
-				if (stack.empty() || stack.top()->m_nodeType != PCNodeType::Leaf) {
-					THROW_INVALID
-				}
-
-				if (previousChar != ']' && previousChar != ')') {
-					created = newNode(PCNodeType::Leaf, parent, nextIndex);
-				}
-				stack.pop();
-
-				if (!stack.empty()) {
-					THROW_INVALID
-				}
-				break;
-			default:
+		switch (next_char) {
+		case '{':
+			if (!stack.empty()) {
 				THROW_INVALID
 			}
-
-			if (created && nextIndex >= 0) {
-				nextIndex = -1;
+			if (!new_node) {
+				new_node = newNode(PCNodeType::Leaf);
 			}
-			previousChar = nextChar;
+			if (getLeafCount() != 1 || getNodeCount() != 1) {
+				THROW_INVALID
+			}
+			stack.push(new_node);
+			break;
+		case '[':
+			if (new_node) {
+				changeNodeType(new_node, PCNodeType::CNode);
+			} else {
+				if (parent == nullptr && getNodeCount() > 0) {
+					THROW_INVALID // would create a second node at top level
+				}
+				new_node = newNode(PCNodeType::CNode, parent);
+			}
+			stack.push(new_node);
+			break;
+		case '(':
+			if (new_node) {
+				changeNodeType(new_node, PCNodeType::PNode);
+			} else {
+				if (parent == nullptr && getNodeCount() > 0) {
+					THROW_INVALID // would create a second node at top level
+				}
+				new_node = newNode(PCNodeType::PNode, parent);
+			}
+			stack.push(new_node);
+			break;
+		case ']':
+			if (stack.empty() || stack.top()->m_nodeType != PCNodeType::CNode) {
+				THROW_INVALID
+			}
+			stack.pop();
+			break;
+		case ')':
+			if (stack.empty() || stack.top()->m_nodeType != PCNodeType::PNode) {
+				THROW_INVALID
+			}
+			stack.pop();
+			break;
+		case '}':
+			if (stack.empty() || stack.top()->m_nodeType != PCNodeType::Leaf) {
+				THROW_INVALID
+			}
+			stack.pop();
+			if (!stack.empty()) {
+				THROW_INVALID
+			}
+			break;
+		default:
+			THROW_INVALID
+		}
+
+		i++;
+		next_char = str[i];
+		bool delim_seen = false;
+		while (i < str.length() && (isspace(next_char) || next_char == ',')) {
+			if (!isspace(next_char)) {
+				if (delim_seen) {
+					THROW_INVALID
+				}
+				delim_seen = true;
+			}
+			i++;
+			next_char = str[i];
 		}
 	}
-	if (!stack.empty() || nextIndex >= 0) {
+	if (!stack.empty()) {
 		throw std::invalid_argument("Invalid PC-Tree! Unexpected end of string");
 	}
 	OGDF_ASSERT(checkValid());

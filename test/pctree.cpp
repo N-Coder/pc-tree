@@ -69,8 +69,13 @@ void testFromString(PCTree& tree) {
 	it("produces equivalent trees when constructed with fromString", [&]() {
 		std::stringstream ss;
 		ss << tree;
-		PCTree copy(ss.str(), true);
-		AssertThat(tree.uniqueID(uid_utils::leafToID), Equals(copy.uniqueID(uid_utils::leafToID)));
+		PCTreeNodeArray<std::string> node_labels;
+		PCTree copy(ss.str(), &node_labels, true);
+		AssertThat(tree.uniqueID(uid_utils::nodeToID), Equals(copy.uniqueID(uid_utils::nodeToID)));
+		FilteringPCTreeDFS dfs(tree, copy.getRootNode());
+		for (PCNode* n : dfs) {
+			AssertThat(node_labels[n], Equals(std::to_string(n->index())));
+		}
 	});
 }
 
