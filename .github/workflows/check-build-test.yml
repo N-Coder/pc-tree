@@ -1,0 +1,99 @@
+name: Check, Build and Test
+
+on:
+  pull_request:
+  push:
+
+jobs:
+  style:
+    name: "Check code style"
+    runs-on: ubuntu-latest
+    container: docker.io/ogdf/clang:15
+    steps:
+      - name: "Add workspace as a safe directory in containers"
+        run: git config --system --add safe.directory $GITHUB_WORKSPACE
+      - uses: actions/checkout@v4
+      - name: Run style checks
+        run: ./clang_format.sh
+      - name: Generate patch with style fixes upon failure
+        run: |
+          echo "Please download the artifact and apply style-fixes.patch to fix code style problems."
+          ./clang_format.sh -f
+          git diff > style-fixes.patch
+          git status
+        if: failure()
+      - name: Store patch with style fixes
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: style-fixes
+          path: style-fixes.patch
+
+  build-linux:
+    name: "Test ${{ matrix.mode }} build on Linux with ${{ matrix.compiler }}"
+    strategy:
+      matrix:
+        mode: [ debug, release ]
+        compiler: [ 'gcc:9', 'gcc:13', 'clang:15' ]
+    runs-on: ubuntu-latest
+    container: docker.io/ogdf/${{ matrix.compiler }}
+    needs: [ style ]
+    steps:
+      - name: "Add workspace as a safe directory in containers"
+        run: git config --system --add safe.directory $GITHUB_WORKSPACE
+      - uses: actions/checkout@v4
+      - name: Build ${{ matrix.mode }} with ${{ matrix.compiler }}
+        run: |
+          mkdir cmake-build
+          cmake -B cmake-build -S . \
+            ${{ matrix.compiler == 'gcc:9' || '-DBUILD_SHARED_LIBS=1' }} \
+            "-DCMAKE_BUILD_TYPE=${{ matrix.mode }}" \
+            "-DCMAKE_CXX_COMPILER='${{ matrix.compiler == 'clang:15' && 'clang++' || 'g++' }}"
+           cmake --build cmake-build --parallel
+      - name: Run test
+        run: cmake-build/test
+      - name: Run test-auto
+        run: cmake-build/test-auto
+
+  build-macos:
+    name: "Test ${{ matrix.mode }} build on ${{ matrix.os }}"
+    strategy:
+      matrix:
+        mode: [ debug, release ]
+        os: [ macos-13, macos-14 ]
+    runs-on: ${{ matrix.os }}
+    needs: [ style ]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build ${{ matrix.mode }}
+        run: |
+          mkdir cmake-build
+          cmake -B cmake-build -S . \
+            "-DCMAKE_BUILD_TYPE=${{ matrix.mode }}"
+           cmake --build cmake-build --parallel
+      - name: Run test
+        run: cmake-build/test
+      - name: Run test-auto
+        run: cmake-build/test-auto
+
+  build-windows:
+    name: "Test ${{ matrix.mode }} build on Windows"
+    strategy:
+      matrix:
+        mode: [ debug, release ]
+    runs-on: windows-latest
+    needs: [ style ]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: microsoft/setup-msbuild@v2
+      - name: Build ${{ matrix.mode }}
+        shell: bash
+        run: |
+          mkdir cmake-build
+          cmake -B cmake-build -S . \
+            "-DCMAKE_BUILD_TYPE=${{ matrix.mode }}"
+           cmake --build cmake-build --parallel
+      - name: Run test
+        run: cmake-build/test.exe
+      - name: Run test-auto
+        run: cmake-build/test-auto.exe
