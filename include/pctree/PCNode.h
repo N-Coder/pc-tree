@@ -149,6 +149,9 @@ private:
 		}
 	}
 
+	OGDF_NO_COPY(PCNode)
+	OGDF_NO_MOVE(PCNode)
+
 	~PCNode() {
 		if (m_nodeType == PCNodeType::Leaf) {
 			m_userData.~array();

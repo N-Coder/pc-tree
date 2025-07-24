@@ -191,6 +191,12 @@ public:
 
 	virtual ~PCTree();
 
+	//! Moving would break backreferences from nodes, so is disallowed
+	OGDF_NO_MOVE(PCTree);
+
+	//! Use the explicit constructor that takes a \p nodeMapping parameter if you want to copy
+	OGDF_NO_COPY(PCTree);
+
 public:
 	/**
 	 * @name Node creation / destruction
